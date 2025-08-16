@@ -1,2 +1,42 @@
-/.venv
+# OS / Editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Env & secrets (keep examples)
 .env
+.env.*
+!*.env.example
+backend/.env
+agent/.env
+frontend/.env.local
+
+# Node / TypeScript (backend, frontend)
+**/node_modules/
+**/dist/
+**/build/
+**/.vite/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+.eslintcache
+*.tsbuildinfo
+
+# Python (agent)
+**/.venv/
+**/__pycache__/
+**/*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Coverage / test artifacts
+coverage/
+**/.coverage
+coverage.xml
+htmlcov/
+logs/
+*.log
