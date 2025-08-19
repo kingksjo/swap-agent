@@ -92,7 +92,7 @@ async function testEndpoints() {
     const statusResponse = await makeRequest({
       hostname: 'localhost',
       port: 8080,
-      path: '/api/status/0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
+      path: '/api/status/0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd',
       method: 'GET',
       headers: {
         'X-API-Key': API_KEY

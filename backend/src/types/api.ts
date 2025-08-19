@@ -61,7 +61,10 @@ export const QuoteResponseSchema = BaseResponseSchema.extend({
 
 // Transaction status types
 export const StatusRequestSchema = z.object({
-  transactionHash: z.string().min(1, 'Transaction hash is required'),
+  transactionHash: z.string()
+    .startsWith('0x', 'Transaction hash must start with 0x')
+    .length(66, 'Transaction hash must be 66 characters long')
+    .regex(/^0x[0-9a-fA-F]{64}$/, 'Invalid transaction hash format'),
 });
 
 export const StatusResponseSchema = BaseResponseSchema.extend({

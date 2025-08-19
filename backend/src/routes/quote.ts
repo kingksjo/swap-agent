@@ -8,28 +8,8 @@ const router = Router();
 // GET /api/quote - Get price quote for a token swap
 router.get('/quote', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Extract query parameters
-    const { fromToken, toToken, amount } = req.query;
-    
-    // Validate required parameters
-    if (!fromToken || !toToken || !amount) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Missing required parameters: fromToken, toToken, amount',
-        timestamp: new Date().toISOString(),
-        code: 'MISSING_PARAMETERS'
-      });
-    }
-    
-    // Create request object for validation
-    const quoteRequest = {
-      fromToken: fromToken as string,
-      toToken: toToken as string,
-      amount: amount as string
-    };
-    
-    // Validate request data
-    const validatedRequest = validateQuoteRequest(quoteRequest);
+    // Validate request data using Zod schema (no manual validation needed)
+    const validatedRequest = validateQuoteRequest(req.query);
     
     // Additional service-level validation
     await QuoteService.validateQuoteRequest(validatedRequest);
@@ -45,7 +25,7 @@ router.get('/quote', async (req: Request, res: Response, next: NextFunction) => 
         message: 'Invalid request data',
         timestamp: new Date().toISOString(),
         code: 'VALIDATION_ERROR',
-        details: error.errors.map((err: any) => ({
+        details: error.errors.map((err: z.ZodIssue) => ({
           field: err.path.join('.'),
           message: err.message
         }))

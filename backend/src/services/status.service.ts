@@ -117,20 +117,9 @@ export class StatusService {
   }
 
   static async validateStatusRequest(request: StatusRequest): Promise<void> {
-    // Validate transaction hash format
-    if (!request.transactionHash.startsWith('0x')) {
-      throw new Error('Transaction hash must start with 0x');
-    }
-
-    if (request.transactionHash.length !== 66) {
-      throw new Error('Transaction hash must be 66 characters long');
-    }
-
-    // Validate hex format
-    const hexPattern = /^0x[0-9a-fA-F]{64}$/;
-    if (!hexPattern.test(request.transactionHash)) {
-      throw new Error('Invalid transaction hash format');
-    }
+    // Validation is now handled by Zod schema in types/api.ts
+    // This method is kept for any additional business logic validation if needed
+    // Currently, no additional validation is required
   }
 
   // Utility method to simulate creating a transaction in the store

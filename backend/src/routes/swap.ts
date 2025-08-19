@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { SwapService } from '../services/swap.service';
 import { validateSwapRequest } from '../types/api';
+import { getSupportedTokens, getTokenBySymbol } from '../utils/addresses';
 import { z } from 'zod';
 
 const router = Router();
@@ -25,7 +26,7 @@ router.post('/swap', async (req: Request, res: Response, next: NextFunction) => 
         message: 'Invalid request data',
         timestamp: new Date().toISOString(),
         code: 'VALIDATION_ERROR',
-        details: error.errors.map(err => ({
+        details: error.errors.map((err: z.ZodIssue) => ({
           field: err.path.join('.'),
           message: err.message
         }))
@@ -62,7 +63,7 @@ router.post('/swap/estimate', async (req: Request, res: Response, next: NextFunc
         message: 'Invalid request data',
         timestamp: new Date().toISOString(),
         code: 'VALIDATION_ERROR',
-        details: error.errors.map(err => ({
+        details: error.errors.map((err: z.ZodIssue) => ({
           field: err.path.join('.'),
           message: err.message
         }))
@@ -76,7 +77,6 @@ router.post('/swap/estimate', async (req: Request, res: Response, next: NextFunc
 // GET /api/swap/tokens - Get list of supported tokens
 router.get('/tokens', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { getSupportedTokens } = await import('../utils/addresses');
     const tokens = getSupportedTokens();
     
     res.status(200).json({
@@ -97,7 +97,6 @@ router.get('/tokens', async (req: Request, res: Response, next: NextFunction) =>
 router.get('/tokens/:symbol', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { symbol } = req.params;
-    const { getTokenBySymbol } = await import('../utils/addresses');
     
     const token = getTokenBySymbol(symbol);
     
