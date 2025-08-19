@@ -50,12 +50,12 @@ EOF
 
 # Performance Tests
 test_endpoint_performance "/health" "GET" "" "Health Check"
-test_endpoint_performance "/api/connection-test" "GET" "" "StarkNet Connection"
-test_endpoint_performance "/api/tokens" "GET" "" "Token List"
+test_endpoint_performance "/api/autoswap/connection" "GET" "" "AutoSwap Connection"
+test_endpoint_performance "/tokens" "GET" "" "Token List (Health Route)"
 test_endpoint_performance "/api/quote?fromToken=ETH&toToken=USDC&amount=0.1" "GET" "" "Mock Quote"
-test_endpoint_performance "/api/quote-real?fromToken=ETH&toToken=USDC&amount=0.1" "GET" "" "Real AutoSwap Quote"
-test_endpoint_performance "/api/swap" "POST" '{"fromToken":"ETH","toToken":"USDC","amount":"0.01"}' "Mock Swap"
-test_endpoint_performance "/api/swap-real" "POST" '{"fromToken":"ETH","toToken":"USDC","amount":"0.01"}' "Real AutoSwap Swap"
+test_endpoint_performance "/api/autoswap/quote?fromToken=ETH&toToken=USDC&amount=0.1" "GET" "" "Real AutoSwap Quote"
+test_endpoint_performance "/api/swap" "POST" '{"fromToken":"ETH","toToken":"USDC","amount":"0.01","userAddress":"0x123"}' "Mock Swap"
+test_endpoint_performance "/api/autoswap/execute" "POST" '{"fromToken":"ETH","toToken":"USDC","amount":"0.01","userAddress":"0x123"}' "Real AutoSwap Swap"
 
 # Load Testing
 echo -e "\n🔥 Load Testing (10 concurrent requests)"
@@ -78,6 +78,6 @@ load_test() {
 
 load_test "/health" "Health Endpoint"
 load_test "/api/quote?fromToken=ETH&toToken=USDC&amount=0.1" "Quote Endpoint"
-load_test "/api/connection-test" "StarkNet Connection"
+load_test "/api/autoswap/connection" "AutoSwap Connection"
 
 echo -e "\n✅ Performance testing complete!"

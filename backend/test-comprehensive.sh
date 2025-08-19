@@ -68,17 +68,17 @@ run_test "Health Check" \
 
 # Test 2: Authentication - Missing API Key
 run_test "Authentication - Missing API Key" \
-    "curl -s '$BASE_URL/api/connection-test'" \
+    "curl -s '$BASE_URL/api/autoswap/connection'" \
     '"code":"MISSING_API_KEY"'
 
 # Test 3: Authentication - Invalid API Key
 run_test "Authentication - Invalid API Key" \
-    "curl -s -H 'x-api-key: invalid-key' '$BASE_URL/api/connection-test'" \
+    "curl -s -H 'x-api-key: invalid-key' '$BASE_URL/api/autoswap/connection'" \
     '"code":"INVALID_API_KEY"'
 
 # Test 4: StarkNet Connection Test
 run_test "StarkNet Connection Test" \
-    "curl -s -H 'x-api-key: $API_KEY' '$BASE_URL/api/connection-test'" \
+    "curl -s -H 'x-api-key: $API_KEY' '$BASE_URL/api/autoswap/connection'" \
     '"connected"'
 
 # Test 5: Token List
@@ -93,22 +93,22 @@ run_test "Mock Quote - ETH to USDC" \
 
 # Test 7: Real AutoSwap Quote
 run_test "Real AutoSwap Quote - ETH to USDC" \
-    "curl -s -H 'x-api-key: $API_KEY' '$BASE_URL/api/quote-real?fromToken=ETH&toToken=USDC&amount=0.1'" \
+    "curl -s -H 'x-api-key: $API_KEY' '$BASE_URL/api/autoswap/quote?fromToken=ETH&toToken=USDC&amount=0.1'" \
     '"estimatedOutput"'
 
 # Test 8: Quote Validation - Missing Parameters
 run_test "Quote Validation - Missing Parameters" \
-    "curl -s -H 'x-api-key: $API_KEY' '$BASE_URL/api/quote-real?fromToken=ETH'" \
+    "curl -s -H 'x-api-key: $API_KEY' '$BASE_URL/api/autoswap/quote?fromToken=ETH'" \
     '"code":"MISSING_PARAMETERS"'
 
 # Test 9: Quote Validation - Same Token
 run_test "Quote Validation - Same Token Pair" \
-    "curl -s -H 'x-api-key: $API_KEY' '$BASE_URL/api/quote-real?fromToken=ETH&toToken=ETH&amount=0.1'" \
+    "curl -s -H 'x-api-key: $API_KEY' '$BASE_URL/api/autoswap/quote?fromToken=ETH&toToken=ETH&amount=0.1'" \
     '"code":"INVALID_TOKEN_PAIR"'
 
 # Test 10: Quote Validation - Invalid Amount
 run_test "Quote Validation - Invalid Amount" \
-    "curl -s -H 'x-api-key: $API_KEY' '$BASE_URL/api/quote-real?fromToken=ETH&toToken=USDC&amount=0'" \
+    "curl -s -H 'x-api-key: $API_KEY' '$BASE_URL/api/autoswap/quote?fromToken=ETH&toToken=USDC&amount=0'" \
     '"code":"INVALID_AMOUNT"'
 
 # Test 11: Mock Swap Execution
@@ -118,17 +118,17 @@ run_test "Mock Swap Execution - ETH to USDC" \
 
 # Test 12: Real AutoSwap Execution
 run_test "Real AutoSwap Execution - ETH to USDC" \
-    "curl -s -H 'x-api-key: $API_KEY' -H 'Content-Type: application/json' -d '{\"fromToken\":\"ETH\",\"toToken\":\"USDC\",\"amount\":\"0.01\"}' '$BASE_URL/api/swap-real'" \
+    "curl -s -H 'x-api-key: $API_KEY' -H 'Content-Type: application/json' -d '{\"fromToken\":\"ETH\",\"toToken\":\"USDC\",\"amount\":\"0.01\"}' '$BASE_URL/api/autoswap/execute'" \
     '"transactionHash"'
 
 # Test 13: Swap Validation - Missing Fields
 run_test "Swap Validation - Missing Fields" \
-    "curl -s -H 'x-api-key: $API_KEY' -H 'Content-Type: application/json' -d '{\"fromToken\":\"ETH\"}' '$BASE_URL/api/swap-real'" \
+    "curl -s -H 'x-api-key: $API_KEY' -H 'Content-Type: application/json' -d '{\"fromToken\":\"ETH\"}' '$BASE_URL/api/autoswap/execute'" \
     '"code":"MISSING_FIELDS"'
 
 # Test 14: Contract Address Detection
 run_test "Contract Address Detection - Real AutoSwap Contract" \
-    "curl -s -H 'x-api-key: $API_KEY' '$BASE_URL/api/quote-real?fromToken=ETH&toToken=USDC&amount=0.1'" \
+    "curl -s -H 'x-api-key: $API_KEY' '$BASE_URL/api/autoswap/quote?fromToken=ETH&toToken=USDC&amount=0.1'" \
     '"estimatedOutput"'
 
 # Test 15: Status Check
