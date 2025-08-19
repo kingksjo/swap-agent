@@ -1,123 +1,140 @@
-import { SwapRequest, SwapResponse } from '../types/api';
-import { 
-  getTokenBySymbol, 
-  calculateOutputAmount, 
-  formatTokenAmount 
-} from '../utils/addresses';
-import {
-  generateMockTransactionHash,
-  generateMockRoute,
-  calculateMockGasEstimate,
-  generateMockDeadline,
-  simulateNetworkDelay,
-  MOCK_ERROR_MESSAGES
-} from '../utils/mockHelpers';
+import type { SwapRequest, SwapResponse, QuoteRequest, QuoteResponse } from '../types/api';
+import { generateTransactionHash, delay, formatAmount, estimateGas } from '../utils/normalize';
+import { getTokenBySymbol } from '../utils/addresses';
 
 export class SwapService {
-  static async executeSwap(request: SwapRequest): Promise<SwapResponse> {
+  async getQuote(params: QuoteRequest): Promise<QuoteResponse> {
     // Simulate network delay
-    await simulateNetworkDelay(200, 800);
+    await delay(500);
 
-    // Validate tokens exist
-    const fromToken = getTokenBySymbol(request.fromToken);
-    const toToken = getTokenBySymbol(request.toToken);
+    const fromToken = getTokenBySymbol(params.fromToken);
+    const toToken = getTokenBySymbol(params.toToken);
 
     if (!fromToken || !toToken) {
-      throw new Error(MOCK_ERROR_MESSAGES.TOKEN_NOT_FOUND);
+      throw new Error(`Unsupported token pair: ${params.fromToken}/${params.toToken}`);
     }
 
-    // Same token check
-    if (request.fromToken.toUpperCase() === request.toToken.toUpperCase()) {
-      throw new Error('Cannot swap token to itself');
+    const inputAmount = parseFloat(params.amount);
+    if (isNaN(inputAmount) || inputAmount <= 0) {
+      throw new Error('Invalid input amount');
     }
 
-    // Calculate output amount
-    const outputAmount = calculateOutputAmount(
-      request.amount,
-      request.fromToken,
-      request.toToken,
-      request.slippage
-    );
+    // Mock exchange rate calculation
+    const mockRates: Record<string, number> = {
+      'ETH/USDC': 2500,
+      'ETH/USDT': 2498,
+      'ETH/STRK': 1250,
+      'USDC/ETH': 0.0004,
+      'USDT/ETH': 0.0004,
+      'STRK/ETH': 0.0008,
+      'USDC/USDT': 0.999,
+      'USDT/USDC': 1.001,
+    };
 
-    if (!outputAmount) {
-      throw new Error(MOCK_ERROR_MESSAGES.INVALID_PAIR);
+    const pairKey = `${params.fromToken}/${params.toToken}`;
+    const reversePairKey = `${params.toToken}/${params.fromToken}`;
+    
+    let rate = mockRates[pairKey];
+    if (!rate && mockRates[reversePairKey]) {
+      rate = 1 / mockRates[reversePairKey];
+    }
+    if (!rate) {
+      rate = 1; // Default 1:1 rate
     }
 
-    // Validate minimum output
-    if (parseFloat(outputAmount) <= 0) {
-      throw new Error(MOCK_ERROR_MESSAGES.INVALID_AMOUNT);
-    }
-
-    // Random failure simulation (5% chance)
-    if (Math.random() < 0.05) {
-      const errors = [
-        MOCK_ERROR_MESSAGES.INSUFFICIENT_BALANCE,
-        MOCK_ERROR_MESSAGES.SLIPPAGE_TOO_HIGH,
-        MOCK_ERROR_MESSAGES.NETWORK_ERROR
-      ];
-      throw new Error(errors[Math.floor(Math.random() * errors.length)]);
-    }
-
-    // Generate mock transaction data
-    const transactionHash = generateMockTransactionHash();
-    const route = generateMockRoute(request.fromToken, request.toToken);
-    const estimatedGas = calculateMockGasEstimate(route.length > 2 ? 'complex' : 'simple');
-    const deadline = generateMockDeadline(30);
-
-    // Format amounts properly
-    const formattedFromAmount = formatTokenAmount(request.amount, fromToken.decimals);
-    const formattedToAmount = formatTokenAmount(outputAmount, toToken.decimals);
+    // Apply mock slippage (0.1-0.3%)
+    const slippagePercent = 0.1 + Math.random() * 0.2;
+    const estimatedOutput = inputAmount * rate * (1 - slippagePercent / 100);
 
     return {
-      status: 'success',
-      message: 'Swap transaction submitted successfully',
-      timestamp: new Date().toISOString(),
-      data: {
-        transactionHash,
-        fromToken: request.fromToken.toUpperCase(),
-        toToken: request.toToken.toUpperCase(),
-        fromAmount: formattedFromAmount,
-        toAmount: formattedToAmount,
-        slippage: request.slippage || 1.0,
-        estimatedGas,
-        deadline,
-        route
-      }
+      fromToken: params.fromToken,
+      toToken: params.toToken,
+      inputAmount: formatAmount(inputAmount, fromToken.decimals),
+      estimatedOutput: formatAmount(estimatedOutput, toToken.decimals),
+      priceImpact: `${slippagePercent.toFixed(2)}%`,
+      route: [params.fromToken, params.toToken],
+      gasEstimate: estimateGas(params.fromToken, params.toToken),
+      slippage: `${slippagePercent.toFixed(2)}%`
     };
   }
 
-  static async validateSwapRequest(request: SwapRequest): Promise<void> {
-    // Validate amount is positive
-    const amount = parseFloat(request.amount);
-    if (amount <= 0) {
-      throw new Error('Amount must be greater than 0');
+  async executeSwap(params: SwapRequest): Promise<SwapResponse> {
+    // Simulate transaction processing time
+    await delay(2000);
+
+    const fromToken = getTokenBySymbol(params.fromToken);
+    const toToken = getTokenBySymbol(params.toToken);
+
+    if (!fromToken || !toToken) {
+      throw new Error(`Unsupported token pair: ${params.fromToken}/${params.toToken}`);
     }
 
-    // Validate amount is not too large (prevent overflow)
-    if (amount > 1e18) {
-      throw new Error('Amount is too large');
+    const inputAmount = parseFloat(params.amount);
+    if (isNaN(inputAmount) || inputAmount <= 0) {
+      throw new Error('Invalid input amount');
     }
 
-    // Validate slippage is reasonable
-    if (request.slippage && (request.slippage < 0.1 || request.slippage > 50)) {
-      throw new Error('Slippage must be between 0.1% and 50%');
+    // Get quote for output calculation
+    const quote = await this.getQuote({
+      fromToken: params.fromToken,
+      toToken: params.toToken,
+      amount: params.amount
+    });
+
+    // Simulate occasional failures (5% chance)
+    if (Math.random() < 0.05) {
+      return {
+        status: 'failed',
+        fromToken: params.fromToken,
+        toToken: params.toToken,
+        inputAmount: formatAmount(inputAmount, fromToken.decimals),
+        error: 'Transaction failed: Insufficient liquidity',
+        timestamp: new Date().toISOString()
+      };
     }
 
-    // Validate user address format (basic Starknet address validation)
-    if (!request.userAddress.startsWith('0x') || request.userAddress.length < 63) {
-      throw new Error('Invalid user address format');
-    }
+    // Success case
+    return {
+      status: 'success',
+      transactionHash: generateTransactionHash(),
+      fromToken: params.fromToken,
+      toToken: params.toToken,
+      inputAmount: formatAmount(inputAmount, fromToken.decimals),
+      outputAmount: quote.estimatedOutput,
+      gasUsed: quote.gasEstimate,
+      timestamp: new Date().toISOString()
+    };
+  }
 
-    // Validate tokens are different
-    if (request.fromToken.toLowerCase() === request.toToken.toLowerCase()) {
-      throw new Error('From and to tokens must be different');
+  // Static methods for backward compatibility with existing route code
+  static async validateSwapRequest(params: SwapRequest): Promise<void> {
+    const fromToken = getTokenBySymbol(params.fromToken);
+    const toToken = getTokenBySymbol(params.toToken);
+    
+    if (!fromToken || !toToken) {
+      throw new Error(`Unsupported token pair: ${params.fromToken}/${params.toToken}`);
+    }
+    
+    const amount = parseFloat(params.amount);
+    if (isNaN(amount) || amount <= 0) {
+      throw new Error('Invalid amount');
     }
   }
 
-  static async estimateSwapGas(request: SwapRequest): Promise<string> {
-    await simulateNetworkDelay(100, 300);
+  static async executeSwap(params: SwapRequest): Promise<SwapResponse> {
+    const service = new SwapService();
+    return await service.executeSwap(params);
+  }
+
+  static async estimateSwapGas(params: SwapRequest): Promise<{ gasEstimate: string }> {
+    const fromToken = getTokenBySymbol(params.fromToken);
+    const toToken = getTokenBySymbol(params.toToken);
     
-    const route = generateMockRoute(request.fromToken, request.toToken);
-    return calculateMockGasEstimate(route.length > 2 ? 'complex' : 'simple');
+    if (!fromToken || !toToken) {
+      throw new Error(`Unsupported token pair: ${params.fromToken}/${params.toToken}`);
+    }
+    
+    const gasEstimate = estimateGas(params.fromToken, params.toToken);
+    return { gasEstimate };
   }
 }

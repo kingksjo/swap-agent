@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { getAllTokens } from '../utils/addresses';
 
 const router = Router();
 
@@ -84,6 +85,16 @@ router.get('/live', (req: Request, res: Response) => {
     message: 'Service is alive',
     timestamp: new Date().toISOString(),
     pid: process.pid
+  });
+});
+
+// Token list endpoint
+router.get('/tokens', (req: Request, res: Response) => {
+  const tokens = getAllTokens();
+  res.json({
+    status: 'success',
+    data: tokens,
+    timestamp: new Date().toISOString()
   });
 });
 

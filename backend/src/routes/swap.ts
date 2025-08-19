@@ -26,7 +26,7 @@ router.post('/swap', async (req: Request, res: Response, next: NextFunction) => 
         message: 'Invalid request data',
         timestamp: new Date().toISOString(),
         code: 'VALIDATION_ERROR',
-        details: error.errors.map((err: z.ZodIssue) => ({
+        details: error.issues.map((err: z.ZodIssue) => ({
           field: err.path.join('.'),
           message: err.message
         }))
@@ -63,7 +63,7 @@ router.post('/swap/estimate', async (req: Request, res: Response, next: NextFunc
         message: 'Invalid request data',
         timestamp: new Date().toISOString(),
         code: 'VALIDATION_ERROR',
-        details: error.errors.map((err: z.ZodIssue) => ({
+        details: error.issues.map((err: z.ZodIssue) => ({
           field: err.path.join('.'),
           message: err.message
         }))
@@ -114,6 +114,91 @@ router.get('/tokens/:symbol', async (req: Request, res: Response, next: NextFunc
       message: 'Token information retrieved successfully',
       timestamp: new Date().toISOString(),
       data: token
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// =============================================================================
+// AutoSwap Integration Routes (Backend Infrastructure Addition)
+// =============================================================================
+
+// Import AutoSwap service for real swap functionality
+import { AutoSwapService } from '../services/autoswap.service';
+const autoSwapService = new AutoSwapService();
+
+// GET /api/autoswap/quote - Get real quote from AutoSwap
+router.get('/autoswap/quote', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { fromToken, toToken, amount } = req.query;
+
+    if (!fromToken || !toToken || !amount) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Missing required parameters: fromToken, toToken, amount',
+        timestamp: new Date().toISOString(),
+        code: 'MISSING_PARAMETERS'
+      });
+    }
+
+    const quote = await autoSwapService.getQuote({
+      fromToken: fromToken as string,
+      toToken: toToken as string,
+      amount: amount as string
+    });
+
+    res.json({
+      status: 'success',
+      data: quote,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/autoswap/execute - Execute real swap through AutoSwap
+router.post('/autoswap/execute', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { fromToken, toToken, amount, slippage, userAddress } = req.body;
+
+    if (!fromToken || !toToken || !amount || !userAddress) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Missing required fields: fromToken, toToken, amount, userAddress',
+        timestamp: new Date().toISOString(),
+        code: 'MISSING_FIELDS'
+      });
+    }
+
+    const result = await autoSwapService.executeSwap({
+      fromToken,
+      toToken,
+      amount,
+      userAddress,
+      slippage: slippage || 0.5
+    });
+
+    res.json({
+      status: 'success',
+      data: result,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/autoswap/connection - Test AutoSwap connection
+router.get('/autoswap/connection', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const connectionStatus = await autoSwapService.checkConnection();
+    
+    res.json({
+      status: 'success',
+      data: connectionStatus,
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
     next(error);
