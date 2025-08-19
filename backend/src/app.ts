@@ -4,6 +4,9 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { errorHandler } from './middlewares/error';
 import { authenticateApiKey } from './middlewares/auth';
+import healthRoutes from './routes/health';
+import swapRoutes from './routes/swap';
+import statusRoutes from './routes/status';
 
 // Create Express app
 const app = express();
@@ -35,23 +38,13 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint (no auth required)
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
+// Health check endpoints (no auth required)
+app.use('/', healthRoutes);
 
 // API routes with authentication
 app.use('/api', authenticateApiKey);
-
-// Placeholder for API routes (Person B will add these)
-// app.use('/api', swapRoutes);
-// app.use('/api', quoteRoutes);
-// app.use('/api', statusRoutes);
+app.use('/api', swapRoutes);
+app.use('/api', statusRoutes);
 
 // 404 handler
 app.use((req, res) => {
