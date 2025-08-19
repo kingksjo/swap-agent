@@ -5,6 +5,10 @@ from typing import Optional, Dict, List, Any
 from fastapi import FastAPI, HTTPException, Depends, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from llm_client import llm  # our existing Groq LLM client
 from system_prompt import DEFAULT_SYSTEM_PROMPT
@@ -20,6 +24,10 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     messages: list[dict]  # Structured format for frontend
     session_id: Optional[str] = None
+
+class ConfirmRequest(BaseModel):
+    action_id: str
+    confirm: bool = True
 
 app = FastAPI()
 
@@ -109,12 +117,56 @@ async def chat(request: ChatRequest, _=Depends(verify_agent_key)) -> ChatRespons
         append_history(session_id, "user", user_content)
         append_history(session_id, "assistant", assistant_text)
 
+        # Check if this was a swap request and generate structured response
+        from tools import detect_swap_intent, mock_quote
+        
+        messages = [{"type": "assistant_text", "text": assistant_text}]
+        
+        # Detect swap intent using LLM
+        swap_intent = await detect_swap_intent(request.message)
+        
+        if swap_intent:
+            # Generate quote and confirmation request
+            quote_data = mock_quote(
+                swap_intent["from_token"], 
+                swap_intent["to_token"], 
+                swap_intent["amount"]
+            )
+            action_id = f"swap_{uuid.uuid4().hex[:8]}"
+            
+            messages.extend([
+                {"type": "swap_quote", "data": quote_data},
+                {"type": "confirmation_request", "action_id": action_id}
+            ])
+
         # Structured reply for frontend
         return ChatResponse(
-            messages=[{"type": "assistant_text", "text": assistant_text}],
+            messages=messages,
             session_id=session_id,
         )
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/confirm")
+async def confirm(request: ConfirmRequest, _=Depends(verify_agent_key)) -> ChatResponse:
+    """Handle swap confirmation requests"""
+    try:
+        if not request.confirm:
+            return ChatResponse(
+                messages=[{"type": "assistant_text", "text": "Swap cancelled. Let me know if you'd like to try again with different parameters! 👍"}]
+            )
+        
+        # Execute mock swap
+        from tools import mock_swap
+        result = mock_swap(request.action_id)
+        
+        return ChatResponse(
+            messages=[
+                {"type": "assistant_text", "text": "Executing your swap now... 🔄 Your transaction has been submitted to the blockchain."},
+                {"type": "swap_result", "data": result}
+            ]
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

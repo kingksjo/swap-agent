@@ -4,7 +4,7 @@ import { SwapQuote } from '../types';
 
 interface Props {
   quote?: SwapQuote;
-  onExecuteSwap?: (quote: SwapQuote) => void;
+  onExecuteSwap?: () => void;
 }
 
 export const SwapCard: React.FC<Props> = ({ quote, onExecuteSwap }) => {
@@ -129,8 +129,8 @@ export const SwapCard: React.FC<Props> = ({ quote, onExecuteSwap }) => {
 
         {/* Execute Button */}
         <button
-          onClick={() => onExecuteSwap?.(quote)}
-          className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white py-4 rounded-2xl font-medium text-lg mt-6 transition-all duration-200"
+          onClick={() => onExecuteSwap?.()}
+          className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white py-4 rounded-2xl font-medium text-lg mt-6 transition-all duration-200"
         >
           Swap
         </button>

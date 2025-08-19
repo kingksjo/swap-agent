@@ -1,18 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { ConversationalInput } from './components/ConversationalInput';
 import { SwapCard } from './components/SwapCard';
 // import { ConversationHistory } from './components/ConversationHistory';
 import { UnifiedMessage } from './components/UnifiedMessage';
 import { useWallet } from './hooks/useWallet';
-import { SwapService } from './utils/swapService';
-import { sendToAgent } from './lib/agentClient';
+
+import { sendToAgent, confirmAction } from './lib/agentClient';
 import { ChatMessage as ChatMessageType, SwapQuote, UserPreferences } from './types';
 
 function App() {
   const { wallet } = useWallet();
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [currentQuote, setCurrentQuote] = useState<SwapQuote | null>(null);
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [preferences] = useState<UserPreferences>({
     favoriteTokens: [],
@@ -21,7 +22,6 @@ function App() {
     riskTolerance: 'medium'
   });
   
-  const swapService = new SwapService();
   const sessionIdRef = useRef<string>(crypto.randomUUID());
 
   // Remove auto-welcome; keep interface clean until user interacts
@@ -63,8 +63,61 @@ function App() {
             content: msg.text,
             timestamp: new Date()
           });
+        } else if (msg.type === 'swap_quote') {
+          // Convert agent quote format to frontend SwapQuote format
+          const quoteData = msg.data;
+          const swapQuote: SwapQuote = {
+            fromToken: {
+              address: '', 
+              symbol: quoteData.from,
+              name: quoteData.from,
+              decimals: 18,
+              chainId: 1,
+              verified: true,
+              logoURI: `/tokens/${quoteData.from.toLowerCase()}.png`
+            },
+            toToken: {
+              address: '',
+              symbol: quoteData.to, 
+              name: quoteData.to,
+              decimals: 18,
+              chainId: 1,
+              verified: true,
+              logoURI: `/tokens/${quoteData.to.toLowerCase()}.png`
+            },
+            fromAmount: quoteData.amount,
+            toAmount: quoteData.min_received || '0',
+            priceImpact: (quoteData.price_impact_bps || 0) / 100,
+            gasEstimate: '0.002',
+            route: (quoteData.route || []).map((dex: string) => ({
+              dex,
+              percentage: 100 / (quoteData.route?.length || 1),
+              gasEstimate: '0.001'
+            })),
+            slippage: (quoteData.slippage_bps || 100) / 100,
+            estimatedGasUSD: 5.0
+          };
+          setCurrentQuote(swapQuote);
+        } else if (msg.type === 'confirmation_request') {
+          setPendingActionId(msg.action_id);
+        } else if (msg.type === 'swap_result') {
+          const resultData = msg.data;
+          addMessage({
+            id: generateMessageId(),
+            type: 'assistant',
+            content: `🎉 Swap executed successfully!\n\nTransaction submitted to the blockchain.`,
+            timestamp: new Date(),
+            metadata: {
+              transaction: {
+                hash: resultData.tx_hash,
+                status: resultData.status
+              }
+            }
+          });
+          // Clear quote and action ID after successful swap
+          setCurrentQuote(null);
+          setPendingActionId(null);
         }
-        // Future: handle swap_quote / confirmation_request / swap_result
       }
     } catch (error) {
       console.error('Error processing swap:', error);
@@ -79,45 +132,59 @@ function App() {
     }
   };
 
-  const handleExecuteSwap = async (quote: SwapQuote) => {
-    setIsProcessing(true);
-
-    try {
-      addMessage({
-        id: generateMessageId(),
-        type: 'assistant',
-        content: 'Executing your swap... Please confirm the transaction in your wallet.',
-        timestamp: new Date()
-      });
-
-      const transaction = await swapService.executeSwap(quote);
-
-      addMessage({
-        id: generateMessageId(),
-        type: 'assistant',
-        content: '🎉 Swap submitted successfully!\n\nYour transaction is now processing on the blockchain.',
-        timestamp: new Date(),
-        metadata: { transaction }
-      });
-
-      // Simulate transaction completion after a delay
-      setTimeout(() => {
-        const completedTx = { ...transaction, status: 'success' as const };
-        addMessage({
-          id: generateMessageId(),
-          type: 'assistant',
-        content: `Swap completed! You received ${parseFloat(quote.toAmount).toFixed(4)} ${quote.toToken.symbol} for ${parseFloat(quote.fromAmount).toFixed(4)} ${quote.fromToken.symbol}. Your tokens should appear in your wallet shortly.`,
-          timestamp: new Date(),
-          metadata: { transaction: completedTx }
-        });
-      }, 5000);
-
-    } catch (error) {
-      console.error('Error executing swap:', error);
+  const handleExecuteSwap = async () => {
+    if (!pendingActionId) {
       addMessage({
         id: generateMessageId(),
         type: 'system',
-        content: 'Failed to execute swap. Please check your wallet connection and try again.',
+        content: 'No pending swap action found. Please try again.',
+        timestamp: new Date()
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Send confirmation to agent
+      const { messages: confirmMsgs } = await confirmAction(pendingActionId, true);
+
+      // Process the confirmation response messages
+      for (const msg of confirmMsgs) {
+        if (msg.type === 'assistant_text') {
+          addMessage({
+            id: generateMessageId(),
+            type: 'assistant',
+            content: msg.text,
+            timestamp: new Date()
+          });
+        } else if (msg.type === 'swap_result') {
+          const resultData = msg.data;
+          addMessage({
+            id: generateMessageId(),
+            type: 'assistant',
+            content: `🎉 Swap executed successfully!\n\nTransaction submitted to the blockchain.`,
+            timestamp: new Date(),
+            metadata: {
+              transaction: {
+                hash: resultData.tx_hash,
+                status: resultData.status
+              }
+            }
+          });
+        }
+      }
+
+      // Clear the current quote and pending action
+      setCurrentQuote(null);
+      setPendingActionId(null);
+
+    } catch (error) {
+      console.error('Error confirming swap:', error);
+      addMessage({
+        id: generateMessageId(),
+        type: 'system',
+        content: 'Failed to execute swap. Please try again.',
         timestamp: new Date()
       });
     } finally {

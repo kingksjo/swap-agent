@@ -34,4 +34,32 @@ export async function sendToAgent(
   return { messages, session_id: json.session_id };
 }
 
+export async function confirmAction(
+  actionId: string,
+  confirm: boolean = true
+): Promise<{ messages: AgentMessage[] }> {
+  const url = `${import.meta.env.VITE_AGENT_URL || 'http://localhost:8000'}/confirm`;
+
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+  };
+  const agentKey = import.meta.env.VITE_AGENT_KEY as string | undefined;
+  if (agentKey) headers['x-agent-key'] = agentKey;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ action_id: actionId, confirm }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Agent confirm error: ${res.status} ${text}`);
+  }
+
+  const json = await res.json();
+  const messages: AgentMessage[] = json.messages || [];
+  return { messages };
+}
+
 

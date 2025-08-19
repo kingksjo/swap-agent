@@ -72,7 +72,7 @@ export const ConversationalInput: React.FC<Props> = ({ onSendMessage, disabled }
             <button
               onClick={handleSend}
               disabled={disabled}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white p-2 rounded-full transition-colors duration-200 disabled:opacity-50"
+              className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-700 disabled:text-gray-500 text-white p-2 rounded-full transition-colors duration-200 disabled:opacity-50"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M22 2L11 13"/>
