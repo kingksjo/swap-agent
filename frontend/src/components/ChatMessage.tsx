@@ -112,10 +112,10 @@ export const ChatMessage: React.FC<Props> = ({ message, onExecuteSwap }) => {
       {/* Avatar */}
       <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
         isUser 
-          ? 'bg-gradient-to-br from-purple-500 to-blue-600' 
+          ? 'bg-gradient-to-br from-orange-500 to-yellow-500' 
           : isSystem 
-            ? 'bg-gradient-to-br from-orange-500 to-red-600'
-            : 'bg-gradient-to-br from-green-500 to-blue-600'
+            ? 'bg-gradient-to-br from-orange-600 to-red-600'
+            : 'bg-gradient-to-br from-orange-500 to-amber-500'
       }`}>
         {isUser ? (
           <User className="w-4 h-4 text-white" />
@@ -130,7 +130,7 @@ export const ChatMessage: React.FC<Props> = ({ message, onExecuteSwap }) => {
       <div className={`max-w-xs sm:max-w-md lg:max-w-lg ${isUser ? 'text-right' : 'text-left'}`}>
         <div className={`inline-block p-4 rounded-lg ${
           isUser 
-            ? 'bg-blue-600 text-white' 
+            ? 'bg-orange-600 text-white' 
             : isSystem
               ? 'bg-orange-900/20 border border-orange-700 text-orange-200'
               : 'bg-gray-800 text-white border border-gray-700'

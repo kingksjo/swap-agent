@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
-import { WalletConnection } from './components/WalletConnection';
 import { ConversationalInput } from './components/ConversationalInput';
 import { SwapCard } from './components/SwapCard';
-import { ConversationHistory } from './components/ConversationHistory';
-import { AIResponse } from './components/AIResponse';
+// import { ConversationHistory } from './components/ConversationHistory';
+import { UnifiedMessage } from './components/UnifiedMessage';
 import { useWallet } from './hooks/useWallet';
-import { NLPProcessor } from './utils/nlpProcessor';
 import { SwapService } from './utils/swapService';
+import { sendToAgent } from './lib/agentClient';
 import { ChatMessage as ChatMessageType, SwapQuote, UserPreferences } from './types';
 
 function App() {
@@ -22,24 +21,11 @@ function App() {
     riskTolerance: 'medium'
   });
   
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const nlpProcessor = new NLPProcessor();
   const swapService = new SwapService();
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
 
-  useEffect(() => {
-    // Add welcome message
-    addMessage({
-      id: '1',
-      type: 'assistant',
-      content: `Welcome to SwapAI! I'm your intelligent trading assistant. I can help you swap tokens, find the best rates, and explain everything in simple terms.
-
-Try commands like:
-• "Swap 0.5 ETH to USDC"
-• "Buy 100 DAI using ETH"
-• "What's the best rate for UNI?"`,
-      timestamp: new Date()
-    });
-  }, []);
+  // Remove auto-welcome; keep interface clean until user interacts
+  useEffect(() => {}, []);
 
   const addMessage = (message: ChatMessageType) => {
     setMessages(prev => [...prev, message]);
@@ -48,15 +34,7 @@ Try commands like:
   const generateMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   const handleSendMessage = async (content: string) => {
-    if (!wallet.isConnected) {
-      addMessage({
-        id: generateMessageId(),
-        type: 'system',
-        content: '⚠️ Please connect your wallet first to use swap functionality.',
-        timestamp: new Date()
-      });
-      return;
-    }
+    // Allow chatting even if wallet is disconnected; agent can still provide contextual guidance
 
     // Add user message
     const userMessage: ChatMessageType = {
@@ -70,75 +48,30 @@ Try commands like:
     setIsProcessing(true);
 
     try {
-      // Process the command
-      const parsedCommand = nlpProcessor.parseSwapCommand(content);
-      
-      if (!parsedCommand) {
-        addMessage({
-          id: generateMessageId(),
-          type: 'assistant',
-          content: `I couldn't understand that command. Try something like:
+      const sessionId = sessionIdRef.current;
+      const ctx = {
+        recipient: wallet?.address,
+        defaults: { slippage_bps: Math.round((preferences.defaultSlippage || 0.5) * 100) }
+      };
+      const { messages: agentMsgs } = await sendToAgent(content, sessionId, ctx);
 
-• "Swap 0.5 ETH to USDC"
-• "Buy 100 DAI using ETH"  
-• "What's the best rate for UNI?"`,
-          timestamp: new Date()
-        });
-        return;
-      }
-
-      if (!parsedCommand.fromToken || !parsedCommand.toToken || !parsedCommand.amount) {
-        addMessage({
-          id: generateMessageId(),
-          type: 'assistant',
-          content: `I need more details. Please specify the tokens and amount you want to trade.`,
-          timestamp: new Date()
-        });
-        return;
-      }
-
-      // Show processing message
-      addMessage({
-        id: generateMessageId(),
-        type: 'assistant',
-        content: `Finding the best route for ${parsedCommand.amount} ${parsedCommand.fromToken.symbol} → ${parsedCommand.toToken.symbol}...
-
-Checking rates across multiple DEXs including Uniswap, SushiSwap, and 1inch.`,
-        timestamp: new Date()
-      });
-
-      // Get quote
-      const quote = await swapService.getQuote(
-        parsedCommand.fromToken,
-        parsedCommand.toToken,
-        parsedCommand.amount,
-        parsedCommand.slippage || preferences.defaultSlippage
-      );
-
-      // Generate educational content
-      const educationalContent = nlpProcessor.generateEducationalResponse(quote);
-
-      // Add result message with quote
-      addMessage({
-        id: generateMessageId(),
-        type: 'assistant',
-        content: `Found the best route! I've analyzed multiple DEXs and found an optimal path using ${quote.route.length} protocols to minimize costs and slippage.`,
-        timestamp: new Date(),
-        metadata: {
-          educationalContent: {
-            title: 'Understanding Your Swap',
-            explanation: educationalContent
-          }
+      for (const msg of agentMsgs) {
+        if (msg.type === 'assistant_text') {
+          addMessage({
+            id: generateMessageId(),
+            type: 'assistant',
+            content: msg.text,
+            timestamp: new Date()
+          });
         }
-      });
-
-      setCurrentQuote(quote);
+        // Future: handle swap_quote / confirmation_request / swap_result
+      }
     } catch (error) {
       console.error('Error processing swap:', error);
       addMessage({
         id: generateMessageId(),
         type: 'system',
-        content: '❌ Something went wrong while processing your request. Please try again or contact support if the issue persists.',
+        content: '❌ Something went wrong while contacting the agent. Please try again.',
         timestamp: new Date()
       });
     } finally {
@@ -197,31 +130,24 @@ Checking rates across multiple DEXs including Uniswap, SushiSwap, and 1inch.`,
       <Header />
       
       <div className="flex-1 flex flex-col">
-        <WalletConnection />
-        
         {/* Centered Main Content */}
         <div className="flex-1 flex flex-col items-center justify-center px-4">
-          {/* Welcome Message - only show if no other messages */}
-          {messages.length === 1 && (
-            <div className="w-full max-w-2xl mb-12">
-              <AIResponse message={messages[0]} />
-            </div>
-          )}
-          
-          {/* Conversation History - show when there are multiple messages */}
-          {messages.length > 1 && (
-            <div className="w-full max-w-4xl mb-8 space-y-6">
-              {messages.slice(1).map(message => (
-                <AIResponse key={message.id} message={message} />
+          {/* Conversation History */}
+          {messages.length > 0 && (
+            <div className="w-full max-w-4xl mb-8">
+              {messages.map(message => (
+                <UnifiedMessage key={message.id} message={message} />
               ))}
               
               {isProcessing && (
-                <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-[#2A2A2A] rounded-xl flex items-center justify-center">
-                      <div className="w-5 h-5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-full max-w-4xl mx-auto px-4 mb-6">
+                  <div className="border border-[#2A2A2A] bg-[#1A1A1A] rounded-2xl p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-[#2A2A2A] rounded-xl flex items-center justify-center">
+                        <div className="w-5 h-5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                      <div className="text-gray-400">Processing your request...</div>
                     </div>
-                    <div className="text-gray-400">Processing your request...</div>
                   </div>
                 </div>
               )}
@@ -235,12 +161,14 @@ Checking rates across multiple DEXs including Uniswap, SushiSwap, and 1inch.`,
             </div>
           )}
           
-          {/* Centered Input */}
-          <div className="w-full max-w-2xl">
-            <ConversationalInput
-              onSendMessage={handleSendMessage}
-              disabled={isProcessing}
-            />
+          {/* Input */}
+          <div className={`w-full max-w-2xl transition-all duration-300 ${messages.length === 0 ? 'mt-[-10vh]' : ''}`}>
+            <div className={`${messages.length === 0 ? 'shadow-[0_0_40px_5px_rgba(249,115,22,0.25)] border border-orange-500/30 rounded-2xl p-2' : ''}`}>
+              <ConversationalInput
+                onSendMessage={handleSendMessage}
+                disabled={isProcessing}
+              />
+            </div>
           </div>
         </div>
       </div>

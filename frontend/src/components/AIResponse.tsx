@@ -1,6 +1,8 @@
 import React from 'react';
 import { Bot, Sparkles, TrendingUp, Shield, Zap } from 'lucide-react';
 import { ChatMessage as ChatMessageType } from '../types';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Props {
   message: ChatMessageType;
@@ -12,32 +14,32 @@ export const AIResponse: React.FC<Props> = ({ message, isLatest }) => {
 
   const getIcon = () => {
     if (message.content.includes('Finding') || message.content.includes('Checking')) {
-      return <Sparkles className="w-5 h-5 text-blue-400" />;
+      return <Sparkles className="w-5 h-5 text-orange-400" />;
     }
     if (message.content.includes('route') || message.content.includes('best')) {
-      return <TrendingUp className="w-5 h-5 text-green-400" />;
+      return <TrendingUp className="w-5 h-5 text-amber-400" />;
     }
     if (message.content.includes('safety') || message.content.includes('risk')) {
       return <Shield className="w-5 h-5 text-orange-400" />;
     }
     if (message.content.includes('Executing') || message.content.includes('submitted')) {
-      return <Zap className="w-5 h-5 text-pink-400" />;
+      return <Zap className="w-5 h-5 text-orange-300" />;
     }
-    return <Bot className="w-5 h-5 text-pink-400" />;
+    return <Bot className="w-5 h-5 text-orange-400" />;
   };
 
   const getAccentColor = () => {
     if (message.content.includes('Finding') || message.content.includes('Checking')) {
-      return 'border-blue-500/20 bg-blue-500/5';
+      return 'border-orange-500/20 bg-orange-500/5';
     }
     if (message.content.includes('route') || message.content.includes('best')) {
-      return 'border-green-500/20 bg-green-500/5';
+      return 'border-amber-500/20 bg-amber-500/5';
     }
     if (message.content.includes('safety') || message.content.includes('risk')) {
       return 'border-orange-500/20 bg-orange-500/5';
     }
     if (message.content.includes('Executing') || message.content.includes('submitted')) {
-      return 'border-pink-500/20 bg-pink-500/5';
+      return 'border-orange-300/20 bg-orange-300/5';
     }
     return 'border-[#2A2A2A] bg-[#1A1A1A]';
   };
@@ -51,8 +53,8 @@ export const AIResponse: React.FC<Props> = ({ message, isLatest }) => {
           </div>
           
           <div className="flex-1">
-            <div className="text-white leading-relaxed whitespace-pre-line">
-              {message.content}
+            <div className="prose prose-invert max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
             </div>
             
             {message.metadata?.educationalContent && (
