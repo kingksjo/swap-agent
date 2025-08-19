@@ -1,4 +1,5 @@
 import express from 'express';
+import type { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -35,26 +36,25 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint (no auth required)
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
+// Import route handlers
+import healthRoutes from './routes/health';
+import swapRoutes from './routes/swap';
+import quoteRoutes from './routes/quote';
+import statusRoutes from './routes/status';
+
+// Health routes (no authentication required)
+app.use('/', healthRoutes);
 
 // API routes with authentication
 app.use('/api', authenticateApiKey);
 
-// Placeholder for API routes (Person B will add these)
-// app.use('/api', swapRoutes);
-// app.use('/api', quoteRoutes);
-// app.use('/api', statusRoutes);
+// Protected API routes
+app.use('/api', swapRoutes);
+app.use('/api', quoteRoutes);
+app.use('/api', statusRoutes);
 
 // 404 handler
-app.use((req, res) => {
+app.use((req: Request, res: Response) => {
   res.status(404).json({
     status: 'error',
     message: `Route ${req.originalUrl} not found`,
