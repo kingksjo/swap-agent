@@ -1,172 +1,105 @@
-import { StatusRequest, StatusResponse } from '../types/api';
-import {
-  getRandomTransactionStatus,
-  generateMockBlockNumber,
-  generateMockConfirmations,
-  generateMockGasUsed,
-  generateMockGasPrice,
-  simulateNetworkDelay,
-  getRandomErrorMessage
-} from '../utils/mockHelpers';
-
-// In-memory storage for mock transaction statuses
-// In a real app, this would be a database or external service
-const transactionStore = new Map<string, {
-  status: 'pending' | 'completed' | 'failed';
-  blockNumber?: number;
-  confirmations?: number;
-  gasUsed?: string;
-  effectiveGasPrice?: string;
-  error?: string;
-  createdAt: Date;
-}>();
+import type { StatusRequest, StatusResponse } from '../types/api';
+import { delay } from '../utils/normalize';
 
 export class StatusService {
-  static async getTransactionStatus(request: StatusRequest): Promise<StatusResponse> {
-    // Simulate network delay for blockchain query
-    await simulateNetworkDelay(300, 800);
+  private transactions: Map<string, StatusResponse> = new Map();
 
-    const { transactionHash } = request;
-
-    // Check if we have this transaction in our store
-    let txData = transactionStore.get(transactionHash);
-
-    if (!txData) {
-      // For unknown transactions, randomly decide if it exists or not
-      if (Math.random() < 0.2) { // 20% chance of not found
-        return {
-          status: 'success',
-          message: 'Transaction status retrieved',
-          timestamp: new Date().toISOString(),
-          data: {
-            transactionHash,
-            status: 'not_found'
-          }
-        };
-      }
-
-      // Create new transaction entry
-      txData = {
-        status: getRandomTransactionStatus(),
-        createdAt: new Date()
-      };
-
-      // Add details based on status
-      if (txData.status === 'completed') {
-        txData.blockNumber = generateMockBlockNumber();
-        txData.confirmations = generateMockConfirmations();
-        txData.gasUsed = generateMockGasUsed();
-        txData.effectiveGasPrice = generateMockGasPrice();
-      } else if (txData.status === 'failed') {
-        txData.error = getRandomErrorMessage();
-        txData.blockNumber = generateMockBlockNumber();
-        txData.gasUsed = generateMockGasUsed();
-        txData.effectiveGasPrice = generateMockGasPrice();
-      }
-
-      transactionStore.set(transactionHash, txData);
-    } else {
-      // Update pending transactions (simulate progression)
-      if (txData.status === 'pending') {
-        const timeSinceCreation = Date.now() - txData.createdAt.getTime();
-        
-        // After 2 minutes, 70% chance to complete, 10% to fail
-        if (timeSinceCreation > 2 * 60 * 1000) {
-          const random = Math.random();
-          if (random < 0.7) {
-            txData.status = 'completed';
-            txData.blockNumber = generateMockBlockNumber();
-            txData.confirmations = generateMockConfirmations();
-            txData.gasUsed = generateMockGasUsed();
-            txData.effectiveGasPrice = generateMockGasPrice();
-          } else if (random < 0.8) {
-            txData.status = 'failed';
-            txData.error = getRandomErrorMessage();
-            txData.blockNumber = generateMockBlockNumber();
-            txData.gasUsed = generateMockGasUsed();
-            txData.effectiveGasPrice = generateMockGasPrice();
-          }
-          // 20% chance to remain pending
-        }
-      }
-
-      // Update confirmations for completed transactions
-      if (txData.status === 'completed' && txData.confirmations) {
-        txData.confirmations = Math.min(txData.confirmations + 1, 64);
-      }
-    }
-
-    // Build response data
-    const responseData: StatusResponse['data'] = {
-      transactionHash,
-      status: txData.status
-    };
-
-    if (txData.blockNumber) responseData.blockNumber = txData.blockNumber;
-    if (txData.confirmations) responseData.confirmations = txData.confirmations;
-    if (txData.gasUsed) responseData.gasUsed = txData.gasUsed;
-    if (txData.effectiveGasPrice) responseData.effectiveGasPrice = txData.effectiveGasPrice;
-    if (txData.error) responseData.error = txData.error;
-
-    return {
-      status: 'success',
-      message: 'Transaction status retrieved successfully',
-      timestamp: new Date().toISOString(),
-      data: responseData
-    };
+  constructor() {
+    // Populate with some mock transaction data
+    this.initializeMockData();
   }
 
-  static async validateStatusRequest(request: StatusRequest): Promise<void> {
-    // Validation is now handled by Zod schema in types/api.ts
-    // This method is kept for any additional business logic validation if needed
-    // Currently, no additional validation is required
-  }
+  private initializeMockData() {
+    const mockTxs = [
+      {
+        transactionHash: '0xabc123def456789012345678901234567890123456789012345678901234567890',
+        status: 'success' as const,
+        confirmations: 12,
+        blockNumber: '0x123456',
+        gasUsed: '0.0012 ETH',
+        timestamp: new Date(Date.now() - 300000).toISOString() // 5 minutes ago
+      },
+      {
+        transactionHash: '0xdef456abc789012345678901234567890123456789012345678901234567890123',
+        status: 'pending' as const,
+        confirmations: 2,
+        timestamp: new Date(Date.now() - 60000).toISOString() // 1 minute ago
+      }
+    ];
 
-  // Utility method to simulate creating a transaction in the store
-  static createMockTransaction(transactionHash: string): void {
-    transactionStore.set(transactionHash, {
-      status: 'pending',
-      createdAt: new Date()
+    mockTxs.forEach(tx => {
+      this.transactions.set(tx.transactionHash, tx);
     });
   }
 
-  // Utility method to get all transactions (for debugging)
-  static getAllTransactions(): Array<{ hash: string; data: any }> {
-    return Array.from(transactionStore.entries()).map(([hash, data]) => ({
-      hash,
-      data
-    }));
+  async getTransactionStatus(params: StatusRequest): Promise<StatusResponse> {
+    await delay(300); // Simulate network call
+
+    // Check if we have this transaction in our mock data
+    const existingTx = this.transactions.get(params.transactionHash);
+    if (existingTx) {
+      return existingTx;
+    }
+
+    // For unknown transactions, simulate checking the blockchain
+    if (!params.transactionHash.startsWith('0x') || params.transactionHash.length < 60) {
+      throw new Error('Invalid transaction hash format');
+    }
+
+    // Mock blockchain query result
+    const mockStatus = this.generateMockStatus(params.transactionHash);
+    this.transactions.set(params.transactionHash, mockStatus);
+    
+    return mockStatus;
   }
 
-  // Utility method to clear old transactions (cleanup)
-  static cleanupOldTransactions(): void {
-    const now = Date.now();
-    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-
-    for (const [hash, data] of transactionStore.entries()) {
-      if (now - data.createdAt.getTime() > maxAge) {
-        transactionStore.delete(hash);
-      }
+  private generateMockStatus(txHash: string): StatusResponse {
+    // Simulate different transaction states
+    const randomState = Math.random();
+    
+    if (randomState < 0.1) {
+      // 10% failed
+      return {
+        transactionHash: txHash,
+        status: 'failed',
+        confirmations: 0,
+        timestamp: new Date().toISOString()
+      };
+    } else if (randomState < 0.3) {
+      // 20% pending
+      return {
+        transactionHash: txHash,
+        status: 'pending',
+        confirmations: Math.floor(Math.random() * 5),
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      // 70% success
+      return {
+        transactionHash: txHash,
+        status: 'success',
+        confirmations: 12 + Math.floor(Math.random() * 100),
+        blockNumber: '0x' + Math.floor(Math.random() * 1000000).toString(16),
+        gasUsed: `${(0.001 + Math.random() * 0.01).toFixed(6)} ETH`,
+        timestamp: new Date(Date.now() - Math.random() * 3600000).toISOString() // Random time in last hour
+      };
     }
   }
 
-  static async waitForTransaction(
-    transactionHash: string, 
-    maxWaitTime: number = 300000 // 5 minutes
-  ): Promise<StatusResponse> {
-    const startTime = Date.now();
-    
-    while (Date.now() - startTime < maxWaitTime) {
-      const status = await this.getTransactionStatus({ transactionHash });
-      
-      if (status.data.status !== 'pending') {
-        return status;
-      }
-      
-      // Wait 5 seconds before checking again
-      await new Promise(resolve => setTimeout(resolve, 5000));
+  // Helper method to add transactions (for testing)
+  addTransaction(tx: StatusResponse) {
+    this.transactions.set(tx.transactionHash, tx);
+  }
+
+  // Static methods for backward compatibility
+  static async validateStatusRequest(params: StatusRequest): Promise<void> {
+    if (!params.transactionHash || params.transactionHash.length < 10) {
+      throw new Error('Invalid transaction hash');
     }
-    
-    throw new Error('Transaction confirmation timeout');
+  }
+
+  static async getTransactionStatus(params: StatusRequest): Promise<StatusResponse> {
+    const service = new StatusService();
+    return await service.getTransactionStatus(params);
   }
 }
