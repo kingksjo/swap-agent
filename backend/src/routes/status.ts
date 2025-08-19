@@ -39,7 +39,7 @@ router.get('/status/:transactionHash', async (req: Request, res: Response, next:
         message: 'Invalid request data',
         timestamp: new Date().toISOString(),
         code: 'VALIDATION_ERROR',
-        details: error.errors.map((err: any) => ({
+        details: error.issues.map((err: any) => ({
           field: err.path.join('.'),
           message: err.message
         }))
@@ -70,7 +70,7 @@ router.post('/status', async (req: Request, res: Response, next: NextFunction) =
         message: 'Invalid request data',
         timestamp: new Date().toISOString(),
         code: 'VALIDATION_ERROR',
-        details: error.errors.map((err: any) => ({
+        details: error.issues.map((err: any) => ({
           field: err.path.join('.'),
           message: err.message
         }))
@@ -122,7 +122,7 @@ router.get('/status/:transactionHash/wait', async (req: Request, res: Response, 
         message: 'Invalid request data',
         timestamp: new Date().toISOString(),
         code: 'VALIDATION_ERROR',
-        details: error.errors.map((err: any) => ({
+        details: error.issues.map((err: any) => ({
           field: err.path.join('.'),
           message: err.message
         }))

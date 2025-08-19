@@ -25,7 +25,7 @@ router.get('/quote', async (req: Request, res: Response, next: NextFunction) => 
         message: 'Invalid request data',
         timestamp: new Date().toISOString(),
         code: 'VALIDATION_ERROR',
-        details: error.errors.map((err: z.ZodIssue) => ({
+        details: error.issues.map((err: z.ZodIssue) => ({
           field: err.path.join('.'),
           message: err.message
         }))

@@ -80,3 +80,10 @@ export function validateStatusRequest(data: any): StatusRequest {
   }
   return data as StatusRequest;
 }
+
+export function validateQuoteRequest(data: any): QuoteRequest {
+  if (!data.fromToken || !data.toToken || !data.amount) {
+    throw new Error('Missing required fields: fromToken, toToken, amount');
+  }
+  return data as QuoteRequest;
+}
