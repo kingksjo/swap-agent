@@ -69,26 +69,26 @@ function App() {
           const swapQuote: SwapQuote = {
             fromToken: {
               address: '', 
-              symbol: quoteData.from,
-              name: quoteData.from,
+              symbol: quoteData.fromToken,
+              name: quoteData.fromToken,
               decimals: 18,
               chainId: 1,
               verified: true,
-              logoURI: `/tokens/${quoteData.from.toLowerCase()}.png`
+              logoURI: `/tokens/${quoteData.fromToken.toLowerCase()}.png`
             },
             toToken: {
               address: '',
-              symbol: quoteData.to, 
-              name: quoteData.to,
+              symbol: quoteData.toToken, 
+              name: quoteData.toToken,
               decimals: 18,
               chainId: 1,
               verified: true,
-              logoURI: `/tokens/${quoteData.to.toLowerCase()}.png`
+              logoURI: `/tokens/${quoteData.toToken.toLowerCase()}.png`
             },
-            fromAmount: quoteData.amount,
-            toAmount: quoteData.min_received || '0',
-            priceImpact: (quoteData.price_impact_bps || 0) / 100,
-            gasEstimate: '0.002',
+            fromAmount: quoteData.inputAmount,
+            toAmount: quoteData.estimatedOutput || '0',
+            priceImpact: parseFloat(quoteData.priceImpact?.replace('%', '') || '0') / 100,
+            gasEstimate: quoteData.gasEstimate || '0.002',
             route: (quoteData.route || []).map((dex: string) => ({
               dex,
               percentage: 100 / (quoteData.route?.length || 1),

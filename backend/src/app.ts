@@ -41,17 +41,19 @@ import healthRoutes from './routes/health';
 import swapRoutes from './routes/swap';
 import quoteRoutes from './routes/quote';
 import statusRoutes from './routes/status';
+import approveRoutes from './routes/approve';
 
 // Health routes (no authentication required)
 app.use('/', healthRoutes);
 
 // API routes with authentication
-app.use('/api', authenticateApiKey);
+app.use('/', authenticateApiKey);
 
 // Protected API routes
-app.use('/api', swapRoutes);
-app.use('/api', quoteRoutes);
-app.use('/api', statusRoutes);
+app.use('/', swapRoutes);
+app.use('/', quoteRoutes);
+app.use('/', statusRoutes);
+app.use('/', approveRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

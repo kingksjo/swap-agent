@@ -74,10 +74,20 @@ export const getExchangeRate = (fromSymbol: string, toSymbol: string): number =>
   return rates[pair] || 1.0;
 };
 
-export const calculateOutputAmount = (inputAmount: number, exchangeRate: number): string => {
+export const calculateOutputAmount = (
+  inputAmount: number, 
+  fromTokenSymbol: string, 
+  toTokenSymbol: string
+): string => {
+  const exchangeRate = getExchangeRate(fromTokenSymbol, toTokenSymbol);
+  if (exchangeRate === null) {
+    // Handle case where exchange rate is not available
+    return '0';
+  }
   return (inputAmount * exchangeRate).toFixed(6);
 };
 
-export const formatTokenAmount = (amount: number, decimals: number): string => {
-  return amount.toFixed(decimals);
+export const formatTokenAmount = (amount: string | number, decimals: number): string => {
+  const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return numericAmount.toFixed(decimals);
 };

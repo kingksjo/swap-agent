@@ -1,4 +1,4 @@
-import { QuoteRequest, QuoteResponse } from '../types/api';
+import { QuoteRequest, QuoteResponse, ApiResponse } from '../types/api';
 import { 
   getTokenBySymbol, 
   getExchangeRate, 
@@ -15,7 +15,7 @@ import {
 } from '../utils/mockHelpers';
 
 export class QuoteService {
-  static async getQuote(request: QuoteRequest): Promise<QuoteResponse> {
+  static async getQuote(request: QuoteRequest): Promise<ApiResponse<QuoteResponse>> {
     // Simulate network delay for price fetching
     await simulateNetworkDelay(150, 400);
 
@@ -41,10 +41,9 @@ export class QuoteService {
 
     // Calculate output amount (without slippage for quote)
     const outputAmount = calculateOutputAmount(
-      request.amount,
+      parseFloat(request.amount),
       request.fromToken,
       request.toToken,
-      0 // No slippage for quotes
     );
 
     if (!outputAmount) {
@@ -68,13 +67,12 @@ export class QuoteService {
       data: {
         fromToken: request.fromToken.toUpperCase(),
         toToken: request.toToken.toUpperCase(),
-        fromAmount: formattedFromAmount,
-        toAmount: formattedToAmount,
-        exchangeRate: exchangeRate.toString(),
+        inputAmount: formattedFromAmount,
+        estimatedOutput: formattedToAmount,
         priceImpact: `${priceImpact}%`,
-        estimatedGas,
+        gasEstimate: estimatedGas,
         route,
-        validUntil
+        slippage: '0.50%'
       }
     };
   }

@@ -102,4 +102,42 @@ export class StatusService {
     const service = new StatusService();
     return await service.getTransactionStatus(params);
   }
+
+  static async waitForTransaction(transactionHash: string, timeoutMs: number): Promise<StatusResponse> {
+    const service = new StatusService();
+    const startTime = Date.now();
+    const pollInterval = 2000; // Poll every 2 seconds
+
+    while (Date.now() - startTime < timeoutMs) {
+      const status = await service.getTransactionStatus({ transactionHash });
+      
+      // If transaction is completed (success or failed), return immediately
+      if (status.status === 'success' || status.status === 'failed') {
+        return status;
+      }
+      
+      // Wait before next poll
+      await delay(pollInterval);
+    }
+    
+    // Timeout reached
+    throw new Error('Transaction confirmation timeout');
+  }
+
+  static getAllTransactions(): StatusResponse[] {
+    const service = new StatusService();
+    return Array.from(service.transactions.values());
+  }
+
+  static cleanupOldTransactions(): void {
+    const service = new StatusService();
+    const cutoffTime = Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
+    
+    for (const [hash, tx] of service.transactions.entries()) {
+      const txTime = new Date(tx.timestamp || 0).getTime();
+      if (txTime < cutoffTime) {
+        service.transactions.delete(hash);
+      }
+    }
+  }
 }

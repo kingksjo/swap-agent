@@ -3,6 +3,71 @@ import uuid
 from typing import Dict, Any, Optional
 from llm_client import llm
 from langchain_core.messages import SystemMessage, HumanMessage
+import requests
+import os
+
+# --- Backend API Configuration ---
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8080")
+AUTOSWAP_API_KEY = os.getenv("AUTOSWAP_API_KEY", "local-dev-key-1")
+
+def _make_backend_request(method: str, endpoint: str, json_data: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Helper function to make authenticated requests to the backend."""
+    headers = {
+        "Content-Type": "application/json",
+        "x-api-key": AUTOSWAP_API_KEY,
+    }
+    try:
+        if method.upper() == 'POST':
+            response = requests.post(f"{BACKEND_URL}{endpoint}", headers=headers, json=json_data, timeout=30)
+        else: # GET
+            response = requests.get(f"{BACKEND_URL}{endpoint}", headers=headers, params=json_data, timeout=30)
+        
+        response.raise_for_status() # Raises an exception for 4XX/5XX errors
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling backend API {endpoint}: {e}")
+        # Return a structured error that the agent can understand
+        return {"error": "BACKEND_API_ERROR", "message": str(e)}
+
+# --- Agent Tools ---
+
+async def get_quote(from_token: str, to_token: str, amount: str) -> Dict[str, Any]:
+    """Gets a swap quote from the backend."""
+    print(f"Getting quote from backend for {amount} {from_token} -> {to_token}...")
+    payload = {
+        "fromToken": from_token,
+        "toToken": to_token,
+        "amount": amount,
+    }
+    # Note: Backend's /quote is a GET request with query params
+    return _make_backend_request('GET', '/quote', json_data=payload)
+
+async def execute_swap(from_token: str, to_token: str, amount: str, slippage_bps: int, recipient: str) -> Dict[str, Any]:
+    """Executes a swap using the backend."""
+    print(f"Executing swap via backend for {amount} {from_token} -> {to_token}...")
+    payload = {
+        "fromToken": from_token,
+        "toToken": to_token,
+        "amount": amount,
+        "slippageBps": slippage_bps,
+        "recipient": recipient,
+    }
+    return _make_backend_request('POST', '/swap', json_data=payload)
+
+async def approve_token(token: str, amount_wei: str) -> Dict[str, Any]:
+    """Approves a token for swapping using the backend."""
+    print(f"Approving token {token} for swapping via backend...")
+    payload = {
+        "token": token,
+        "amountWei": amount_wei,
+        # Spender is defaulted by the backend
+    }
+    return _make_backend_request('POST', '/approve', json_data=payload)
+
+async def get_transaction_status(tx_hash: str) -> Dict[str, Any]:
+    """Gets the status of a transaction from the backend."""
+    print(f"Getting status for tx: {tx_hash}...")
+    return _make_backend_request('GET', f'/status/{tx_hash}')
 
 async def detect_swap_intent(user_message: str) -> Optional[Dict[str, Any]]:
     """Use LLM to intelligently detect swap intent and extract parameters"""
@@ -77,42 +142,3 @@ Remember: Only return the JSON object, nothing else."""
     except Exception as e:
         print(f"Unexpected error in intent detection: {e}")
         return None
-
-def mock_quote(from_token: str, to_token: str, amount: float) -> Dict[str, Any]:
-    """Generate a mock swap quote for testing"""
-    
-    # Mock conversion rates (USD values)
-    rates = {
-        "ETH": 3200, 
-        "USDC": 1, 
-        "DAI": 1, 
-        "STRK": 2.5,
-        "BTC": 65000,
-        "USDT": 1
-    }
-    
-    from_rate = rates.get(from_token, 1)
-    to_rate = rates.get(to_token, 1) 
-    
-    # Calculate estimated output with 1% slippage
-    estimated_output = (amount * from_rate / to_rate) * 0.99
-    
-    # Calculate price impact (mock - higher for larger trades)
-    price_impact_bps = min(100, int(amount * from_rate / 10000 * 100))  # Max 1%
-    
-    return {
-        "from": from_token,
-        "to": to_token,
-        "amount": str(amount),
-        "min_received": str(round(estimated_output, 6)),
-        "route": ["Uniswap V3", "1inch"] if from_token != to_token else ["Direct"],
-        "price_impact_bps": price_impact_bps,
-        "slippage_bps": 100  # 1% default slippage
-    }
-
-def mock_swap(action_id: str) -> Dict[str, Any]:
-    """Generate a mock swap execution result"""
-    return {
-        "tx_hash": f"0x{uuid.uuid4().hex[:64]}", 
-        "status": "PENDING"
-    }

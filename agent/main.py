@@ -13,6 +13,7 @@ load_dotenv()
 from llm_client import llm  # our existing Groq LLM client
 from system_prompt import DEFAULT_SYSTEM_PROMPT
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from tools import detect_swap_intent, get_quote, execute_swap, get_transaction_status, approve_token
 
 # Define our input/output models for type safety and validation
 class ChatRequest(BaseModel):
@@ -52,6 +53,8 @@ def verify_agent_key(x_agent_key: Optional[str] = Header(default=None)):
 
 # In-memory conversation store: { session_id: [{role, content}] }
 conversation_history: Dict[str, List[Dict[str, Any]]] = {}
+# In-memory store for pending actions that require confirmation
+pending_actions: Dict[str, Dict[str, Any]] = {}
 
 def append_history(session_id: str, role: str, content: str):
     if session_id not in conversation_history:
@@ -118,26 +121,42 @@ async def chat(request: ChatRequest, _=Depends(verify_agent_key)) -> ChatRespons
         append_history(session_id, "assistant", assistant_text)
 
         # Check if this was a swap request and generate structured response
-        from tools import detect_swap_intent, mock_quote
-        
         messages = [{"type": "assistant_text", "text": assistant_text}]
         
-        # Detect swap intent using LLM
+        # Detect swap intent using our tool
         swap_intent = await detect_swap_intent(request.message)
         
         if swap_intent:
-            # Generate quote and confirmation request
-            quote_data = mock_quote(
-                swap_intent["from_token"], 
-                swap_intent["to_token"], 
-                swap_intent["amount"]
+            # 1. Get a quote from the backend
+            quote_data = await get_quote(
+                from_token=swap_intent["from_token"],
+                to_token=swap_intent["to_token"],
+                amount=str(swap_intent["amount"])
             )
-            action_id = f"swap_{uuid.uuid4().hex[:8]}"
-            
-            messages.extend([
-                {"type": "swap_quote", "data": quote_data},
-                {"type": "confirmation_request", "action_id": action_id}
-            ])
+
+            if "error" in quote_data:
+                # If the backend returns an error, relay it to the user
+                error_message = f"I couldn't get a quote right now. The backend said: {quote_data.get('message', 'Unknown error')}"
+                messages.append({"type": "assistant_text", "text": error_message})
+            else:
+                # 2. If quote is successful, prepare a confirmation action
+                action_id = f"swap_{uuid.uuid4().hex[:8]}"
+                
+                # Store the context for when the user confirms
+                pending_actions[action_id] = {
+                    "from_token": swap_intent["from_token"],
+                    "to_token": swap_intent["to_token"],
+                    "amount": str(swap_intent["amount"]),
+                    "recipient": request.context.get("recipient") if request.context else None,
+                    "slippage_bps": request.context.get("defaults", {}).get("slippage_bps", 100) if request.context else 100,
+                    "quote": quote_data.get('data', quote_data) # Handle nested data key
+                }
+
+                # 3. Format the messages for the frontend
+                messages.extend([
+                    {"type": "swap_quote", "data": quote_data.get('data', quote_data)},
+                    {"type": "confirmation_request", "action_id": action_id}
+                ])
 
         # Structured reply for frontend
         return ChatResponse(
@@ -152,21 +171,55 @@ async def chat(request: ChatRequest, _=Depends(verify_agent_key)) -> ChatRespons
 async def confirm(request: ConfirmRequest, _=Depends(verify_agent_key)) -> ChatResponse:
     """Handle swap confirmation requests"""
     try:
+        action_id = request.action_id
         if not request.confirm:
+            if action_id in pending_actions:
+                del pending_actions[action_id] # Clean up
             return ChatResponse(
                 messages=[{"type": "assistant_text", "text": "Swap cancelled. Let me know if you'd like to try again with different parameters! 👍"}]
             )
         
-        # Execute mock swap
-        from tools import mock_swap
-        result = mock_swap(request.action_id)
+        # Retrieve the stored action details
+        action_details = pending_actions.get(action_id)
+        if not action_details:
+            raise HTTPException(status_code=404, detail="Action not found or has expired.")
+
+        # --- Real Swap Execution ---
+        # In a real scenario, you might need an approval first.
+        # For now, we proceed directly to swap.
         
+        swap_result = await execute_swap(
+            from_token=action_details["from_token"],
+            to_token=action_details["to_token"],
+            amount=action_details["amount"],
+            slippage_bps=action_details["slippage_bps"],
+            recipient=action_details["recipient"],
+        )
+        
+        # Clean up the pending action once it's been executed
+        del pending_actions[action_id]
+
+        if "error" in swap_result:
+            error_message = f"The swap failed. The backend said: {swap_result.get('message', 'Unknown error')}"
+            return ChatResponse(messages=[{"type": "assistant_text", "text": error_message}])
+
         return ChatResponse(
             messages=[
                 {"type": "assistant_text", "text": "Executing your swap now... 🔄 Your transaction has been submitted to the blockchain."},
-                {"type": "swap_result", "data": result}
+                {"type": "swap_result", "data": swap_result.get('data', swap_result)}
             ]
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/status/{tx_hash}")
+async def get_status(tx_hash: str, _=Depends(verify_agent_key)):
+    """Proxy endpoint to get transaction status from the backend."""
+    try:
+        status_result = await get_transaction_status(tx_hash)
+        if "error" in status_result:
+            raise HTTPException(status_code=502, detail=status_result.get("message", "Backend status check failed."))
+        return status_result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
