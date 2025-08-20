@@ -51,3 +51,33 @@ export const getAllTokens = (): TokenInfo[] => {
 export const getSupportedTokens = (): TokenInfo[] => {
   return getAllTokens();
 };
+
+// Quote service helper functions
+export const getExchangeRate = (fromSymbol: string, toSymbol: string): number => {
+  // Mock exchange rates for demo
+  const rates: Record<string, number> = {
+    'ETH/USDC': 2500,
+    'ETH/USDT': 2498,
+    'ETH/STRK': 1250,
+    'USDC/ETH': 0.0004,
+    'USDT/ETH': 0.0004,
+    'STRK/ETH': 0.0008,
+    'USDC/USDT': 0.999,
+    'USDT/USDC': 1.001,
+    'STRK/USDC': 2.0,
+    'USDC/STRK': 0.5,
+    'STRK/USDT': 1.99,
+    'USDT/STRK': 0.502,
+  };
+  
+  const pair = `${fromSymbol.toUpperCase()}/${toSymbol.toUpperCase()}`;
+  return rates[pair] || 1.0;
+};
+
+export const calculateOutputAmount = (inputAmount: number, exchangeRate: number): string => {
+  return (inputAmount * exchangeRate).toFixed(6);
+};
+
+export const formatTokenAmount = (amount: number, decimals: number): string => {
+  return amount.toFixed(decimals);
+};
