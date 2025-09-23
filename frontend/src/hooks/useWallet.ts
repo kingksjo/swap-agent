@@ -14,15 +14,13 @@ export const useWallet = () => {
   const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
-    checkConnection();
-    
-    if (window.ethereum) {
+    if (window.ethereum && (window.ethereum.isMetaMask || window.ethereum.isTrust)) {
       window.ethereum.on('accountsChanged', handleAccountsChanged);
       window.ethereum.on('chainChanged', handleChainChanged);
     }
 
     return () => {
-      if (window.ethereum) {
+      if (window.ethereum && (window.ethereum.isMetaMask || window.ethereum.isTrust)) {
         window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
         window.ethereum.removeListener('chainChanged', handleChainChanged);
       }
@@ -30,10 +28,14 @@ export const useWallet = () => {
   }, []);
 
   const checkConnection = async () => {
-    if (!window.ethereum) return;
+    if (!window.ethereum || !(window.ethereum.isMetaMask || window.ethereum.isTrust)) return;
+
+    console.log('Checking wallet connection...');
 
     try {
       const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      console.log('eth_accounts result:', accounts);
+
       if (accounts.length > 0) {
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
         const balance = await window.ethereum.request({
@@ -54,27 +56,30 @@ export const useWallet = () => {
   };
 
   const connect = async () => {
-    if (!window.ethereum) {
-      alert('MetaMask is required to use this application');
+    if (!window.ethereum || !(window.ethereum.isMetaMask || window.ethereum.isTrust)) {
+      alert('Please install MetaMask or Trust Wallet to use this feature.');
       return false;
     }
 
+    console.log('Connecting with wallet...');
+
     setIsConnecting(true);
     try {
-      const accounts = await window.ethereum.request({ 
-        method: 'eth_requestAccounts' 
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts'
       });
-      
+      console.log('eth_requestAccounts result:', accounts);
+
       if (accounts.length > 0) {
         await checkConnection();
         return true;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error connecting wallet:', error);
     } finally {
       setIsConnecting(false);
     }
-    
+
     return false;
   };
 
