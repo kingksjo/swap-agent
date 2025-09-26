@@ -1,9 +1,9 @@
-# AutoSwap Agent MVP
+# Miye MVP
 
-This project is a proof-of-concept MVP built for a hackathon. It combines:
+This project is a proof-of-concept MVP of Miye. It combines:
 
 - 🌀 **AutoSwap SDK** – for token swap aggregation on StarkNet
-- 🧑‍💻 **Node.js Service (TypeScript)** – wraps the SDK into HTTP endpoints
+- 🧑‍💻 **FastAPI (Python)** – wraps the SDK into HTTP/Websocket endpoints
 - 🤖 **LangChain Agent (Python)** – interprets user intent and calls the backend endpoints
 - 💬 **Web Chat UI** – lightweight frontend for user interaction
 
@@ -17,7 +17,7 @@ A user can say things like:
 And the LangChain agent will:
 
 1. Parse the intent & parameters (token, amount, action)
-2. Call the Node.js backend endpoint (`/swap`)
+2. Call the FastAPI backend endpoint (`/swap`)
 3. Backend executes the swap using autoswap-sdk
 4. User gets a result/transaction receipt in the chat
 
