@@ -5,6 +5,7 @@ import { SwapCard } from './components/SwapCard';
 // import { ConversationHistory } from './components/ConversationHistory';
 import { UnifiedMessage } from './components/UnifiedMessage';
 import { useWallet } from './hooks/useWallet';
+import { LandingPage } from './components/LandingPage';
 
 import { sendToAgent, confirmAction } from './lib/agentClient';
 import { ChatMessage as ChatMessageType, SwapQuote, UserPreferences } from './types';
@@ -196,49 +197,52 @@ function App() {
     <div className="min-h-screen bg-[#0D0D0D] flex flex-col">
       <Header />
       
-      <div className="flex-1 flex flex-col">
-        {/* Centered Main Content */}
-        <div className="flex-1 flex flex-col items-center justify-center px-4">
-          {/* Conversation History */}
-          {messages.length > 0 && (
-            <div className="w-full max-w-4xl mb-8">
-              {messages.map(message => (
-                <UnifiedMessage key={message.id} message={message} />
-              ))}
-              
-              {isProcessing && (
-                <div className="w-full max-w-4xl mx-auto px-4 mb-6">
-                  <div className="border border-[#2A2A2A] bg-[#1A1A1A] rounded-2xl p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-[#2A2A2A] rounded-xl flex items-center justify-center">
-                        <div className="w-5 h-5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+      <main className="flex-1 flex flex-col">
+        {messages.length === 0 ? (
+          <LandingPage onSendMessage={handleSendMessage} />
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center px-4">
+            {/* Conversation History */}
+            {messages.length > 0 && (
+              <div className="w-full max-w-4xl mb-8">
+                {messages.map(message => (
+                  <UnifiedMessage key={message.id} message={message} />
+                ))}
+                
+                {isProcessing && (
+                  <div className="w-full max-w-4xl mx-auto px-4 mb-6">
+                    <div className="border border-[#2A2A2A] bg-[#1A1A1A] rounded-2xl p-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-[#2A2A2A] rounded-xl flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                        <div className="text-gray-400">Processing your request...</div>
                       </div>
-                      <div className="text-gray-400">Processing your request...</div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* Swap Card - show when quote is available */}
-          {currentQuote && (
-            <div className="w-full max-w-md mb-8">
-              <SwapCard quote={currentQuote} onExecuteSwap={handleExecuteSwap} />
-            </div>
-          )}
-          
-          {/* Input */}
-          <div className={`w-full max-w-2xl transition-all duration-300 ${messages.length === 0 ? 'mt-[-10vh]' : ''}`}>
-            <div className={`${messages.length === 0 ? 'shadow-[0_0_40px_5px_rgba(249,115,22,0.25)] border border-orange-500/30 rounded-2xl p-2' : ''}`}>
-              <ConversationalInput
-                onSendMessage={handleSendMessage}
-                disabled={isProcessing}
-              />
+                )}
+              </div>
+            )}
+            
+            {/* Swap Card - show when quote is available */}
+            {currentQuote && (
+              <div className="w-full max-w-md mb-8">
+                <SwapCard quote={currentQuote} onExecuteSwap={handleExecuteSwap} />
+              </div>
+            )}
+            
+            {/* Input */}
+            <div className={`w-full max-w-2xl transition-all duration-300`}>
+              <div className={''}>
+                <ConversationalInput
+                  onSendMessage={handleSendMessage}
+                  disabled={isProcessing}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        )}
+      </main>
     </div>
   );
 }

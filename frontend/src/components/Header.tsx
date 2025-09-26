@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Zap, Settings, Wallet, ChevronDown, Copy, ExternalLink, LogOut } from 'lucide-react';
+import { ChevronDown, Copy, ExternalLink, LogOut } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
 
 export const Header: React.FC = () => {
@@ -34,9 +34,8 @@ export const Header: React.FC = () => {
         <button
           onClick={connect}
           disabled={isConnecting}
-          className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:from-gray-600 disabled:to-gray-700 text-white px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 disabled:opacity-50 flex items-center gap-2"
+          className="bg-accent hover:bg-accent/90 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 flex items-center gap-2"
         >
-          <Wallet className="w-4 h-4" />
           {isConnecting ? 'Connecting...' : 'Connect Wallet'}
         </button>
       );
@@ -46,9 +45,8 @@ export const Header: React.FC = () => {
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setShowWalletMenu(!showWalletMenu)}
-          className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 flex items-center gap-2"
+          className="bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2"
         >
-          <Wallet className="w-4 h-4" />
           {wallet.address?.slice(0, 6)}...{wallet.address?.slice(-4)}
           <ChevronDown className="w-3 h-3" />
         </button>
@@ -102,21 +100,14 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#0D0D0D] border-b border-[#1A1A1A] px-6 py-4">
+    <div className="px-6 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-3">
-            {/* Miye Logo - kept as a public asset so it can be swapped easily */}
-            <img src="/miye.svg" alt="Miye" className="w-8 h-8" />
-            <span className="text-white text-xl font-semibold">Miye</span>
-          </div>
+        <div className="flex items-center gap-3">
+          {/* Miye Logo - kept as a public asset so it can be swapped easily */}
+          <img src="/miye.svg" alt="Miye" className="w-8" />
         </div>
 
         <div className="flex items-center gap-4">
-          <button className="p-2 text-gray-400 hover:text-white hover:bg-[#1A1A1A] rounded-lg transition-colors">
-            <Settings className="w-5 h-5" />
-          </button>
-          
           <WalletButton />
         </div>
       </div>
