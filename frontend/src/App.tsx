@@ -22,11 +22,11 @@ function App() {
     preferredNetworks: [1, 137],
     riskTolerance: 'medium'
   });
-  
+
   const sessionIdRef = useRef<string>(crypto.randomUUID());
 
   // Remove auto-welcome; keep interface clean until user interacts
-  useEffect(() => {}, []);
+  useEffect(() => { }, []);
 
   const addMessage = (message: ChatMessageType) => {
     setMessages(prev => [...prev, message]);
@@ -69,7 +69,7 @@ function App() {
           const quoteData = msg.data;
           const swapQuote: SwapQuote = {
             fromToken: {
-              address: '', 
+              address: '',
               symbol: quoteData.fromToken,
               name: quoteData.fromToken,
               decimals: 18,
@@ -79,7 +79,7 @@ function App() {
             },
             toToken: {
               address: '',
-              symbol: quoteData.toToken, 
+              symbol: quoteData.toToken,
               name: quoteData.toToken,
               decimals: 18,
               chainId: 1,
@@ -196,7 +196,7 @@ function App() {
   return (
     <div className="min-h-screen bg-[#0D0D0D] flex flex-col">
       <Header />
-      
+
       <main className="flex-1 flex flex-col">
         {messages.length === 0 ? (
           <LandingPage onSendMessage={handleSendMessage} />
@@ -208,7 +208,7 @@ function App() {
                 {messages.map(message => (
                   <UnifiedMessage key={message.id} message={message} />
                 ))}
-                
+
                 {isProcessing && (
                   <div className="w-full max-w-4xl mx-auto px-4 mb-6">
                     <div className="border border-[#2A2A2A] bg-[#1A1A1A] rounded-2xl p-6">
@@ -223,16 +223,16 @@ function App() {
                 )}
               </div>
             )}
-            
+
             {/* Swap Card - show when quote is available */}
             {currentQuote && (
               <div className="w-full max-w-md mb-8">
                 <SwapCard quote={currentQuote} onExecuteSwap={handleExecuteSwap} />
               </div>
             )}
-            
+
             {/* Input */}
-            <div className={`w-full max-w-2xl transition-all duration-300`}>
+            <div className={`w-full max-w-2xl transition-all duration-300 mt-32 mb-8`}>
               <div className={''}>
                 <ConversationalInput
                   onSendMessage={handleSendMessage}

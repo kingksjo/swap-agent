@@ -43,7 +43,7 @@ export const UnifiedMessage: React.FC<Props> = ({ message, isLatest }) => {
     };
 
     return (
-      <div className={`text-text-primary leading-relaxed ${isUser ? 'text-accent/100' : ''}`}>
+      <div className={`text-text-primary leading-relaxed ${isUser ? 'text-accent/90 font-medium' : ''}`}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment

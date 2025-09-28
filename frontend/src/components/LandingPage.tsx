@@ -15,7 +15,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSendMessage }) => {
   return (
     <div className="flex flex-col items-center justify-center mt-10 h-full text-center">
       <div className="mb-4">
-        <span className="inline-block bg-background-secondary border-2 border-white mt-5 text-text-secondary text-sm font-medium px-4 py-2 rounded-full shadow-lg shadow-accent/40">
+        <span className="inline-block bg-background-secondary border-2 border-white mt-5 text-text-secondary text-sm font-medium px-4 py-2 rounded-full shadow-lg shadow-accent/30">
           Introducing Miye
         </span>
       </div>
