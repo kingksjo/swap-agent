@@ -232,7 +232,7 @@ function App() {
             )}
             
             {/* Input */}
-            <div className={`w-full max-w-2xl transition-all duration-300`}>
+            <div className={`w-full max-w-2xl transition-all duration-300 mt-32 mb-8`}>
               <div className={''}>
                 <ConversationalInput
                   onSendMessage={handleSendMessage}

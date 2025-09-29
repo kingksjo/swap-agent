@@ -26,7 +26,7 @@ export const ConversationalInput: React.FC<Props> = ({ onSendMessage, disabled }
 
   return (
     <div className="w-full">
-      <div className="relative">
+      <div className="relative mt-5">
         <input
           type="text"
           value={input}
@@ -34,7 +34,7 @@ export const ConversationalInput: React.FC<Props> = ({ onSendMessage, disabled }
           onKeyPress={handleKeyPress}
           placeholder="Ask me anything"
           disabled={disabled}
-          className="w-full bg-transparent border border-background-secondary rounded-lg px-6 py-4 pr-16 text-white placeholder-gray-500 text-base focus:outline-none focus:border-accent/70 transition-all duration-200 disabled:opacity-50"
+          className="w-full bg-transparent border border-white-50 rounded-full px-6 py-4 pr-16 text-white placeholder-gray-500 text-base focus:outline-none focus:border-accent/70 transition-all duration-200 disabled:opacity-50"
         />
         
         <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
