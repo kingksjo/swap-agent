@@ -43,7 +43,7 @@ export const UnifiedMessage: React.FC<Props> = ({ message, isLatest }) => {
     };
 
     return (
-        <div className="text-text-primary leading-relaxed">
+        <div className={isUser ? "text-accent leading-relaxed" : "text-text-primary leading-relaxed "}>
         <ReactMarkdown 
             remarkPlugins={[remarkGfm]}
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -68,7 +68,7 @@ export const UnifiedMessage: React.FC<Props> = ({ message, isLatest }) => {
       <div className={`max-w-[80%]`}>
         <div className={`inline-block px-5 py-3 rounded-2xl ${
           isUser 
-            ? 'bg-accent text-white rounded-br-none' 
+            ? 'bg-white text-accent rounded-br-none' 
             : isSystem
               ? 'bg-red-900/50 text-red-200 rounded-bl-none'
               : 'bg-background-secondary text-text-primary rounded-bl-none'
