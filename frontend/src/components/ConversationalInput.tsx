@@ -26,7 +26,7 @@ export const ConversationalInput: React.FC<Props> = ({ onSendMessage, disabled }
 
   return (
     <div className="w-full">
-      <div className="relative mt-5">
+      <div className="relative">
         <input
           type="text"
           value={input}

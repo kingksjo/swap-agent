@@ -194,53 +194,47 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] flex flex-col">
+    <div className="min-h-screen bg-background-primary flex flex-col h-screen">
       <Header />
       
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col overflow-hidden">
         {messages.length === 0 ? (
           <LandingPage onSendMessage={handleSendMessage} />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center px-4">
+          <>
             {/* Conversation History */}
-            {messages.length > 0 && (
-              <div className="w-full max-w-4xl mb-8">
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="w-full max-w-4xl mx-auto">
                 {messages.map(message => (
                   <UnifiedMessage key={message.id} message={message} />
                 ))}
                 
                 {isProcessing && (
-                  <div className="w-full max-w-4xl mx-auto px-4 mb-6">
-                    <div className="border border-[#2A2A2A] bg-[#1A1A1A] rounded-2xl p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-[#2A2A2A] rounded-xl flex items-center justify-center">
-                          <div className="w-5 h-5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                        <div className="text-gray-400">Processing your request...</div>
-                      </div>
+                  <div className="w-full px-4 mb-6 flex gap-4 justify-start">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-background-secondary">
+                      <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
                     </div>
+                    <div className="text-text-secondary text-sm pt-1">Thinking...</div>
+                  </div>
+                )}
+                
+                {/* Swap Card - show when quote is available */}
+                {currentQuote && (
+                  <div className="w-full max-w-md mx-auto my-4">
+                    <SwapCard quote={currentQuote} onExecuteSwap={handleExecuteSwap} />
                   </div>
                 )}
               </div>
-            )}
-            
-            {/* Swap Card - show when quote is available */}
-            {currentQuote && (
-              <div className="w-full max-w-md mb-8">
-                <SwapCard quote={currentQuote} onExecuteSwap={handleExecuteSwap} />
-              </div>
-            )}
+            </div>
             
             {/* Input */}
-            <div className={`w-full max-w-2xl transition-all duration-300 mt-32 mb-8`}>
-              <div className={''}>
-                <ConversationalInput
-                  onSendMessage={handleSendMessage}
-                  disabled={isProcessing}
-                />
-              </div>
+            <div className={`w-full max-w-2xl mx-auto p-4`}>
+              <ConversationalInput
+                onSendMessage={handleSendMessage}
+                disabled={isProcessing}
+              />
             </div>
-          </div>
+          </>
         )}
       </main>
     </div>

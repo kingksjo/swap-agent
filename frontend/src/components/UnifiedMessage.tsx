@@ -1,15 +1,14 @@
 import React from 'react';
-import { Bot, User, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { ChatMessage as ChatMessageType } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 interface Props {
   message: ChatMessageType;
-  isLatest?: boolean;
 }
 
-export const UnifiedMessage: React.FC<Props> = ({ message, isLatest }) => {
+export const UnifiedMessage: React.FC<Props> = ({ message }) => {
   const isUser = message.type === 'user';
   const isSystem = message.type === 'system';
   const isAssistant = message.type === 'assistant';
@@ -29,21 +28,24 @@ export const UnifiedMessage: React.FC<Props> = ({ message, isLatest }) => {
   const renderContent = () => {
     // Shared markdown components
     const markdownComponents = {
-        p: ({ children } : { children: React.ReactNode }) => <p className="mb-2 last:mb-0">{children}</p>,
-        ul: ({ children } : { children: React.ReactNode }) => <ul className="list-disc list-inside space-y-1 mb-2">{children}</ul>,
-        ol: ({ children } : { children: React.ReactNode }) => <ol className="list-decimal list-inside space-y-1 mb-2">{children}</ol>,
-        li: ({ children } : { children: React.ReactNode }) => <li>{children}</li>,
-        strong: ({ children } : { children: React.ReactNode }) => <strong className="font-semibold">{children}</strong>,
-        em: ({ children } : { children: React.ReactNode }) => <em>{children}</em>,
-        code: ({ children } : { children: React.ReactNode }) => <code className="bg-background-secondary px-1 py-0.5 rounded text-sm font-mono">{children}</code>,
-        pre: ({ children } : { children: React.ReactNode }) => <pre className="bg-background-secondary p-2 rounded overflow-x-auto text-sm font-mono">{children}</pre>,
-        h1: ({ children } : { children: React.ReactNode }) => <h1 className="text-2xl font-bold mb-2">{children}</h1>,
-        h2: ({ children } : { children: React.ReactNode }) => <h2 className="text-xl font-semibold mb-2">{children}</h2>,
-        h3: ({ children } : { children: React.ReactNode }) => <h3 className="text-lg font-medium mb-2">{children}</h3>,
+        p: ({ children } : { children: React.ReactNode }) => <p className="mb-3 last:mb-0 leading-7">{children}</p>,
+        ul: ({ children } : { children: React.ReactNode }) => <ul className="list-disc list-outside ml-4 space-y-2 mb-3">{children}</ul>,
+        ol: ({ children } : { children: React.ReactNode }) => <ol className="list-decimal list-outside ml-4 space-y-2 mb-3">{children}</ol>,
+        li: ({ children } : { children: React.ReactNode }) => <li className="leading-7">{children}</li>,
+        strong: ({ children } : { children: React.ReactNode }) => <strong className="font-bold text-white">{children}</strong>,
+        em: ({ children } : { children: React.ReactNode }) => <em className="italic">{children}</em>,
+        code: ({ children } : { children: React.ReactNode }) => <code className="bg-accent/20 text-accent px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>,
+        pre: ({ children } : { children: React.ReactNode }) => <pre className="bg-background-secondary p-4 rounded-lg overflow-x-auto text-sm font-mono my-3 border border-white/10">{children}</pre>,
+        h1: ({ children } : { children: React.ReactNode }) => <h1 className="text-2xl font-bold mb-3 mt-4 first:mt-0 text-white">{children}</h1>,
+        h2: ({ children } : { children: React.ReactNode }) => <h2 className="text-xl font-bold mb-3 mt-4 first:mt-0 text-white">{children}</h2>,
+        h3: ({ children } : { children: React.ReactNode }) => <h3 className="text-lg font-semibold mb-2 mt-3 first:mt-0 text-white">{children}</h3>,
+        blockquote: ({ children } : { children: React.ReactNode }) => <blockquote className="border-l-4 border-accent pl-4 my-3 italic text-text-secondary">{children}</blockquote>,
+        hr: () => <hr className="my-4 border-white/10" />,
+        a: ({ children, href } : { children: React.ReactNode, href?: string }) => <a href={href} className="text-accent hover:text-accent/80 underline" target="_blank" rel="noopener noreferrer">{children}</a>,
     };
 
     return (
-        <div className={isUser ? "text-accent leading-relaxed" : "text-text-primary leading-relaxed "}>
+        <div className={isUser ? "text-accent leading-7" : "text-text-secondary leading-7"}>
         <ReactMarkdown 
             remarkPlugins={[remarkGfm]}
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -56,23 +58,25 @@ export const UnifiedMessage: React.FC<Props> = ({ message, isLatest }) => {
     );
   };
 
-  return (
-    <div className={`w-full max-w-4xl mx-auto px-4 mb-6 flex gap-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
-      
-      {!isUser && (
+  // Assistant and System messages - no bubble, just text with icon
+  if (isAssistant || isSystem) {
+    return (
+      <div className={`w-full max-w-4xl mx-auto px-4 mb-6 flex gap-4 justify-start items-start`}>
         <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-background-secondary">
           {getIcon()}
         </div>
-      )}
+        <div className={`flex-1 max-w-[85%] ${isSystem ? 'text-red-400' : ''}`}>
+          {renderContent()}
+        </div>
+      </div>
+    );
+  }
 
+  // User messages - white bubble on the right
+  return (
+    <div className={`w-full max-w-4xl mx-auto px-4 mb-6 flex gap-4 justify-end`}>
       <div className={`max-w-[80%]`}>
-        <div className={`inline-block px-5 py-3 rounded-2xl ${
-          isUser 
-            ? 'bg-white text-accent rounded-br-none' 
-            : isSystem
-              ? 'bg-red-900/50 text-red-200 rounded-bl-none'
-              : 'bg-background-secondary text-text-primary rounded-bl-none'
-        }`}>
+        <div className={`inline-block px-5 py-3 rounded-2xl bg-white text-accent rounded-br-none`}>
           {renderContent()}
         </div>
       </div>
