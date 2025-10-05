@@ -337,6 +337,41 @@ Compatible with:
 - AWS S3 + CloudFront
 - GitHub Pages
 
+### Deploying with the Vercel CLI (monorepo friendly)
+
+If Vercel's web UI doesn't detect the `frontend` folder automatically, use the Vercel CLI to deploy directly from the subfolder.
+
+PowerShell commands (copy/paste):
+
+```powershell
+# Install Vercel CLI (global)
+npm i -g vercel
+
+# Login (opens browser)
+vercel login
+
+# Deploy interactively from the frontend folder
+cd frontend
+vercel --prod
+
+# Or non-interactive / CI-style deploy from repo root
+vercel --prod --cwd frontend --confirm
+```
+
+Vercel settings when using the web UI:
+- Root Directory: `frontend` (you can type it manually)
+- Build Command: `npm run build`
+- Output Directory: `dist`
+
+Environment variables:
+- Add `VITE_AGENT_URL` and any other `VITE_` variables via the Vercel Dashboard (Project → Settings → Environment Variables). These are inlined at build-time.
+
+Using the serverless proxy (`/api/chat`):
+- We added `frontend/api/chat.js` as a small proxy function that forwards POST /api/chat to the private agent using server-side env vars `AGENT_INTERNAL_URL` and `AGENT_INTERNAL_KEY`.
+- Set `AGENT_INTERNAL_URL` and `AGENT_INTERNAL_KEY` in Vercel Dashboard (they are not exposed to the client).
+- Change your client `VITE_AGENT_URL` to `/api/chat` if you want the frontend to call the proxy.
+
+
 ## 🤝 Contributing
 
 ### Development Workflow
