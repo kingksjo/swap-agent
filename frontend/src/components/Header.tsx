@@ -1,13 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Copy, ExternalLink, LogOut } from 'lucide-react';
-import { useWallet } from '../hooks/useWallet';
+import { useAccount, useBalance, useDisconnect } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 
 export const Header: React.FC = () => {
-  const { wallet, isConnecting, connect, disconnect } = useWallet();
+  const { address, isConnected } = useAccount();
+  const { data: balance } = useBalance({ address });
+  const { disconnect } = useDisconnect();
+  const { openConnectModal } = useConnectModal();
+
   const [showWalletMenu, setShowWalletMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close menu when clicking outside
+  // Close wallet menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -16,27 +21,24 @@ export const Header: React.FC = () => {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const copyAddress = () => {
-    if (wallet.address) {
-      navigator.clipboard.writeText(wallet.address);
-      setShowWalletMenu(false); // Close menu after copying
+    if (address) {
+      navigator.clipboard.writeText(address);
+      setShowWalletMenu(false);
     }
   };
 
   const WalletButton = () => {
-    if (!wallet.isConnected) {
+    if (!isConnected) {
       return (
         <button
-          onClick={connect}
-          disabled={isConnecting}
-          className="bg-accent hover:bg-accent/90 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 flex items-center gap-2"
+          onClick={() => openConnectModal?.()}
+          className="bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2"
         >
-          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+          Connect Wallet
         </button>
       );
     }
@@ -47,7 +49,7 @@ export const Header: React.FC = () => {
           onClick={() => setShowWalletMenu(!showWalletMenu)}
           className="bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2"
         >
-          {wallet.address?.slice(0, 6)}...{wallet.address?.slice(-4)}
+          {address?.slice(0, 6)}...{address?.slice(-4)}
           <ChevronDown className="w-3 h-3" />
         </button>
 
@@ -55,13 +57,15 @@ export const Header: React.FC = () => {
           <div className="absolute right-0 top-full mt-2 w-64 bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl shadow-xl z-50">
             <div className="p-4 border-b border-[#2A2A2A]">
               <div className="text-white font-medium mb-1">
-                {wallet.address?.slice(0, 6)}...{wallet.address?.slice(-4)}
+                {address?.slice(0, 6)}...{address?.slice(-4)}
               </div>
               <div className="text-gray-400 text-sm">
-                Balance: {wallet.balance} ETH
+                Balance: {balance?.formatted
+                  ? `${parseFloat(balance.formatted).toFixed(4)} ${balance.symbol}`
+                  : '—'}
               </div>
             </div>
-            
+
             <div className="p-2">
               <button
                 onClick={copyAddress}
@@ -70,10 +74,10 @@ export const Header: React.FC = () => {
                 <Copy className="w-4 h-4" />
                 Copy Address
               </button>
-              
+
               <button
                 onClick={() => {
-                  window.open(`https://etherscan.io/address/${wallet.address}`, '_blank');
+                  window.open(`https://etherscan.io/address/${address}`, '_blank');
                   setShowWalletMenu(false);
                 }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-[#2A2A2A] rounded-lg transition-colors"
@@ -81,7 +85,7 @@ export const Header: React.FC = () => {
                 <ExternalLink className="w-4 h-4" />
                 View on Explorer
               </button>
-              
+
               <button
                 onClick={() => {
                   disconnect();
@@ -103,7 +107,6 @@ export const Header: React.FC = () => {
     <div className="px-6 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {/* Miye Logo - kept as a public asset so it can be swapped easily */}
           <img src="/miye.svg" alt="Miye" className="w-8" />
         </div>
 
