@@ -2,7 +2,7 @@
 
 This project is a proof-of-concept MVP of Miye. It combines:
 
-- 🌀 **AutoSwap SDK** – for token swap aggregation on StarkNet
+- 🌀 **web3.py** – for blockchain integration on EVM Chains like base.
 - 🧑‍💻 **FastAPI (Python)** – wraps the SDK into HTTP/Websocket endpoints
 - 🤖 **LangChain Agent (Python)** – interprets user intent and calls the backend endpoints
 - 💬 **Web Chat UI** – lightweight frontend for user interaction
