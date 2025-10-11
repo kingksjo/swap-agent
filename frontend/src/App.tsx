@@ -4,17 +4,20 @@ import { ConversationalInput } from './components/ConversationalInput';
 import { SwapCard } from './components/SwapCard';
 // import { ConversationHistory } from './components/ConversationHistory';
 import { UnifiedMessage } from './components/UnifiedMessage';
-import { useWallet } from './hooks/useWallet';
 import { LandingPage } from './components/LandingPage';
 
 import { sendToAgent, confirmAction } from './lib/agentClient';
 import { ChatMessage as ChatMessageType, SwapQuote, UserPreferences } from './types';
+import { useAccount } from 'wagmi';
+
+
+
 
 function App() {
-  const { wallet } = useWallet();
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [currentQuote, setCurrentQuote] = useState<SwapQuote | null>(null);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  const { address, isConnected } = useAccount();
   const [isProcessing, setIsProcessing] = useState(false);
   const [preferences] = useState<UserPreferences>({
     favoriteTokens: [],
@@ -51,7 +54,7 @@ function App() {
     try {
       const sessionId = sessionIdRef.current;
       const ctx = {
-        recipient: wallet?.address,
+        recipient: address,
         defaults: { slippage_bps: Math.round((preferences.defaultSlippage || 0.5) * 100) }
       };
       const { messages: agentMsgs } = await sendToAgent(content, sessionId, ctx);
