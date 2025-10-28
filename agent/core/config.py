@@ -3,9 +3,13 @@
 Centralized configuration management using Pydantic Settings.
 All environment variables and app configuration should be defined here.
 """
+from pathlib import Path
 from typing import Dict, Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
@@ -14,12 +18,13 @@ class Settings(BaseSettings):
     
     Environment variables can be set in:
     - .env file in the agent/ directory
+    - .env file in agent/core/
     - System environment variables
     - Docker/deployment configs
     """
     
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(BASE_DIR / ".env", BASE_DIR / "core/.env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore"
@@ -30,6 +35,10 @@ class Settings(BaseSettings):
     frontend_origin: str = Field(
         default="http://localhost:5173",
         description="CORS origin for frontend"
+    )
+    allowed_origins: Optional[str] = Field(
+        default=None,
+        description="Comma-separated list of additional allowed origins"
     )
     agent_api_key: Optional[str] = Field(
         default=None,

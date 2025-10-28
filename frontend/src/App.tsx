@@ -1,20 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { ConversationalInput } from './components/ConversationalInput';
-import { SwapCard } from './components/SwapCard';
-// import { ConversationHistory } from './components/ConversationHistory';
 import { UnifiedMessage } from './components/UnifiedMessage';
 import { useWallet } from './hooks/useWallet';
 import { LandingPage } from './components/LandingPage';
 
-import { sendToAgent, confirmAction } from './lib/agentClient';
-import { ChatMessage as ChatMessageType, SwapQuote, UserPreferences } from './types';
+import { sendToAgent } from './lib/agentClient';
+import { ChatMessage as ChatMessageType, UserPreferences } from './types';
 
 function App() {
   const { wallet } = useWallet();
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
-  const [currentQuote, setCurrentQuote] = useState<SwapQuote | null>(null);
-  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [preferences] = useState<UserPreferences>({
     favoriteTokens: [],
@@ -64,128 +60,31 @@ function App() {
             content: msg.text,
             timestamp: new Date()
           });
-        } else if (msg.type === 'swap_quote') {
-          // Convert agent quote format to frontend SwapQuote format
-          const quoteData = msg.data;
-          const swapQuote: SwapQuote = {
-            fromToken: {
-              address: '', 
-              symbol: quoteData.fromToken,
-              name: quoteData.fromToken,
-              decimals: 18,
-              chainId: 1,
-              verified: true,
-              logoURI: `/tokens/${quoteData.fromToken.toLowerCase()}.png`
-            },
-            toToken: {
-              address: '',
-              symbol: quoteData.toToken, 
-              name: quoteData.toToken,
-              decimals: 18,
-              chainId: 1,
-              verified: true,
-              logoURI: `/tokens/${quoteData.toToken.toLowerCase()}.png`
-            },
-            fromAmount: quoteData.inputAmount,
-            toAmount: quoteData.estimatedOutput || '0',
-            priceImpact: parseFloat(quoteData.priceImpact?.replace('%', '') || '0') / 100,
-            gasEstimate: quoteData.gasEstimate || '0.002',
-            route: (quoteData.route || []).map((dex: string) => ({
-              dex,
-              percentage: 100 / (quoteData.route?.length || 1),
-              gasEstimate: '0.001'
-            })),
-            slippage: (quoteData.slippage_bps || 100) / 100,
-            estimatedGasUSD: 5.0
-          };
-          setCurrentQuote(swapQuote);
         } else if (msg.type === 'confirmation_request') {
-          setPendingActionId(msg.action_id);
-        } else if (msg.type === 'swap_result') {
-          const resultData = msg.data;
+          const data = msg.data || {};
+          const summaryLines: string[] = [];
+          if (data.summary) summaryLines.push(data.summary);
+          if (data.fee_info) {
+            summaryLines.push('\nGas details:');
+            if (data.fee_info.gas_limit) summaryLines.push(`- Gas limit: ${data.fee_info.gas_limit}`);
+            if (data.fee_info.max_fee_per_gas) summaryLines.push(`- Max fee per gas: ${data.fee_info.max_fee_per_gas}`);
+            if (data.fee_info.max_priority_fee_per_gas) summaryLines.push(`- Priority fee: ${data.fee_info.max_priority_fee_per_gas}`);
+            if (data.fee_info.gas_price) summaryLines.push(`- Legacy gas price: ${data.fee_info.gas_price}`);
+          }
           addMessage({
             id: generateMessageId(),
             type: 'assistant',
-            content: `🎉 Swap executed successfully!\n\nTransaction submitted to the blockchain.`,
-            timestamp: new Date(),
-            metadata: {
-              transaction: {
-                hash: resultData.tx_hash,
-                status: resultData.status
-              }
-            }
+            content: summaryLines.join('\n'),
+            timestamp: new Date()
           });
-          // Clear quote and action ID after successful swap
-          setCurrentQuote(null);
-          setPendingActionId(null);
         }
       }
     } catch (error) {
-      console.error('Error processing swap:', error);
+      console.error('Error contacting agent:', error);
       addMessage({
         id: generateMessageId(),
         type: 'system',
         content: '❌ Something went wrong while contacting the agent. Please try again.',
-        timestamp: new Date()
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleExecuteSwap = async () => {
-    if (!pendingActionId) {
-      addMessage({
-        id: generateMessageId(),
-        type: 'system',
-        content: 'No pending swap action found. Please try again.',
-        timestamp: new Date()
-      });
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      // Send confirmation to agent
-      const { messages: confirmMsgs } = await confirmAction(pendingActionId, true);
-
-      // Process the confirmation response messages
-      for (const msg of confirmMsgs) {
-        if (msg.type === 'assistant_text') {
-          addMessage({
-            id: generateMessageId(),
-            type: 'assistant',
-            content: msg.text,
-            timestamp: new Date()
-          });
-        } else if (msg.type === 'swap_result') {
-          const resultData = msg.data;
-          addMessage({
-            id: generateMessageId(),
-            type: 'assistant',
-            content: `🎉 Swap executed successfully!\n\nTransaction submitted to the blockchain.`,
-            timestamp: new Date(),
-            metadata: {
-              transaction: {
-                hash: resultData.tx_hash,
-                status: resultData.status
-              }
-            }
-          });
-        }
-      }
-
-      // Clear the current quote and pending action
-      setCurrentQuote(null);
-      setPendingActionId(null);
-
-    } catch (error) {
-      console.error('Error confirming swap:', error);
-      addMessage({
-        id: generateMessageId(),
-        type: 'system',
-        content: 'Failed to execute swap. Please try again.',
         timestamp: new Date()
       });
     } finally {
@@ -215,13 +114,6 @@ function App() {
                       <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
                     </div>
                     <div className="text-text-secondary text-sm pt-1">Thinking...</div>
-                  </div>
-                )}
-                
-                {/* Swap Card - show when quote is available */}
-                {currentQuote && (
-                  <div className="w-full max-w-md mx-auto my-4">
-                    <SwapCard quote={currentQuote} onExecuteSwap={handleExecuteSwap} />
                   </div>
                 )}
               </div>
