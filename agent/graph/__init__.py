@@ -1,2 +1,3 @@
-# agent/graph/__init__.py
+from .workflow import app
 
+__all__ = ["app"]
