@@ -1,20 +1,25 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 import re
 
 class SwapProposal(BaseModel):
-    action: str = "swap"
-    tokenIn: str
-    tokenOut: str
-    amount: str  # Kept as string to preserve precision
-    maxSlippage: str
-    chain: str = "base"
+    action: str = Field("swap", description="Identifies this as a swap transaction.")
+    tokenIn: str = Field(..., description="Symbol of the token to sell (e.g., ETH).")
+    tokenInAddress: str = Field(..., description="Contract address of the token to sell.")
+    tokenOut: str = Field(..., description="Symbol of the token to buy (e.g., USDC).")
+    tokenOutAddress: str = Field(..., description="Contract address of the token to buy.")
+    amount: str = Field(..., description="Amount to swap as a string to preserve precision.")
+    estimatedOutput: str = Field(..., description="Estimated amount of tokenOut to be received.")
+    maxSlippage: str = Field(..., description="Maximum allowed slippage percentage.")
+    chain: str = Field("base", description="The network chain ID or name (default: base).")
+    routerAddress: str = Field(..., description="The address of the Uniswap/Router contract to call.")
 
 class SendProposal(BaseModel):
-    action: str = "send"
-    token: str
-    toAddress: str
-    amount: str
-    chain: str = "base"
+    action: str = Field("send", description="Identifies this as a token send transaction.")
+    token: str = Field(..., description="Symbol of the token to send.")
+    tokenAddress: str = Field(..., description="Contract address of the token to send.")
+    toAddress: str = Field(..., description="Recipient wallet address (0x...).")
+    amount: str = Field(..., description="Amount to send as a string.")
+    chain: str = Field("base", description="The network chain ID or name.")
 
     @field_validator('toAddress')
     @classmethod
