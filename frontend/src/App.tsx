@@ -5,6 +5,8 @@ import { SwapCard } from './components/SwapCard';
 // import { ConversationHistory } from './components/ConversationHistory';
 import { UnifiedMessage } from './components/UnifiedMessage';
 import { LandingPage } from './components/LandingPage';
+import { MockModeIndicator } from './components/MockModeIndicator';
+
 
 import { sendToAgent, confirmAction } from './lib/agentClient';
 import { ChatMessage as ChatMessageType, SwapQuote, UserPreferences } from './types';
@@ -199,6 +201,8 @@ function App() {
   return (
     <div className="min-h-screen bg-background-primary flex flex-col h-screen">
       <Header />
+      <MockModeIndicator />
+
       
       <main className="flex-1 flex flex-col overflow-hidden">
         {messages.length === 0 ? (
@@ -231,7 +235,7 @@ function App() {
             </div>
             
             {/* Input */}
-            <div className={`w-full max-w-2xl mx-auto p-4`}>
+            <div className={`w-full max-w-2xl mx-auto p-4 mb-5 mt-5`}>
               <ConversationalInput
                 onSendMessage={handleSendMessage}
                 disabled={isProcessing}
