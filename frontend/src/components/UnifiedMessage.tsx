@@ -1,5 +1,5 @@
-import React from 'react';
-import { AlertTriangle } from 'lucide-react';
+import React, { useState } from 'react';
+import { AlertTriangle, Copy, Upload, MoreHorizontal } from 'lucide-react';
 import { ChatMessage as ChatMessageType } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,6 +12,27 @@ export const UnifiedMessage: React.FC<Props> = ({ message }) => {
   const isUser = message.type === 'user';
   const isSystem = message.type === 'system';
   const isAssistant = message.type === 'assistant';
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleUpload = () => {
+    // TODO: Implement upload functionality
+    console.log('Upload clicked');
+  };
+
+  const handleMore = () => {
+    // TODO: Implement more options
+    console.log('More options clicked');
+  };
 
   const getIcon = () => {
     if (isUser) {
@@ -21,8 +42,8 @@ export const UnifiedMessage: React.FC<Props> = ({ message }) => {
     if (isSystem) {
       return <AlertTriangle className="w-5 h-5 text-red-400" />;
     }
-    // For assistant, return the Miye logo
-    return <img src="/miye.svg" alt="Miye" className="w-5 h-5" />;
+    // // For assistant, return the Miye logo
+    // return <img src="/miye.svg" alt="Miye" className="w-5 h-5" />;
   };
 
   const renderContent = () => {
@@ -61,12 +82,44 @@ export const UnifiedMessage: React.FC<Props> = ({ message }) => {
   // Assistant and System messages - no bubble, just text with icon
   if (isAssistant || isSystem) {
     return (
-      <div className={`w-full max-w-4xl mx-auto px-4 mb-6 flex gap-4 justify-start items-start`}>
-        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-background-secondary">
-          {getIcon()}
-        </div>
-        <div className={`flex-1 max-w-[85%] ${isSystem ? 'text-red-400' : ''}`}>
-          {renderContent()}
+      <div className={`w-full max-w-4xl mx-auto px-4 mb-6`}>
+        <div className="flex gap-4 justify-start items-start">
+          <div>
+            {getIcon()}
+          </div>
+          <div className={`flex-1 max-w-[85%] ${isSystem ? 'text-red-400' : ''}`}>
+            {renderContent()}
+            
+            {/* Action Icons - Only show for assistant messages */}
+            {isAssistant && (
+              <div className="flex items-center gap-3 mt-3">
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1.5 text-text-secondary/60 hover:text-text-secondary transition-colors duration-200"
+                  title={copied ? "Copied!" : "Copy"}
+                >
+                  <Copy className="w-4 h-4" />
+                  {copied && <span className="text-xs">Copied!</span>}
+                </button>
+                
+                <button
+                  onClick={handleUpload}
+                  className="text-text-secondary/60 hover:text-text-secondary transition-colors duration-200"
+                  title="Upload"
+                >
+                  <Upload className="w-4 h-4" />
+                </button>
+                
+                <button
+                  onClick={handleMore}
+                  className="text-text-secondary/60 hover:text-text-secondary transition-colors duration-200"
+                  title="More options"
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
