@@ -1,0 +1,44 @@
+Refined Integration Plan: Agent-to-Frontend Transaction Flow
+
+Current Status: 
+- Backend (Agent) verified. It produces correct payloads for Swaps and Sends on Base.
+- Backend API verified. It returns 'message' and 'proposed_transaction'.
+- Frontend UI verified. Components (SwapCard, UnifiedMessage) exist but are using mock data.
+
+PHASE 1: Data & API Alignment
+1.  Update 'src/types/index.ts':
+    - Add 'TransactionProposal' interface to match the Python 'SwapProposal' and 'SendProposal' models.
+    - Update 'ChatMessage' metadata to include an optional 'proposal' field.
+2.  Update 'src/lib/agentClient.ts':
+    - Change 'sendToAgent' to match the FastAPI response: { message: string, proposed_transaction: any, conversation_id: string }.
+    - Ensure it returns both the text response and the structured proposal.
+
+PHASE 2: UI Context & Interaction
+3.  Update 'src/App.tsx' Message Logic:
+    - When receiving a response from 'sendToAgent', check if 'proposed_transaction' exists.
+    - Append the 'proposed_transaction' to the 'metadata' of the latest assistant message.
+4.  Enhance 'src/components/UnifiedMessage.tsx':
+    - Check for 'message.metadata.proposal'.
+    - If present, render 'SwapCard' immediately below the assistant's text.
+5.  Refactor 'src/components/SwapCard.tsx':
+    - Replace mock 'SwapQuote' with 'TransactionProposal' prop.
+    - Display real token symbols, addresses, and amounts from the proposal.
+    - Add logic to detect if the proposal is a 'swap' or 'send' and adjust the UI accordingly.
+
+PHASE 3: Web3 & Wallet Execution
+6.  Setup ABIs & Constants:
+    - Create 'src/constants/abis.ts' with ERC20 'approve' and Uniswap V3 'exactInputSingle' ABIs.
+7.  Implement Transaction Hook/Logic:
+    - Use wagmi's 'useWriteContract' and 'useSendTransaction'.
+    - Workflow for Swap: 
+        a. If tokenIn is not ETH, check allowance.
+        b. If allowance < amount, show 'Approve' button first.
+        c. Call 'exactInputSingle' on the 'routerAddress' provided in the proposal.
+    - Workflow for Send:
+        a. Call 'sendTransaction' or ERC20 'transfer'.
+
+PHASE 4: Feedback Loop (The "Final Word")
+8.  Status Reporting:
+    - Once the transaction hash is received and confirmed (wait for 1 receipt), the frontend must call the agent again with a "status update" message.
+    - Message format: "Transaction [HASH] completed with status [SUCCESS/FAIL]".
+    - This triggers the Agent's 'report_transaction_status_tool', resulting in a final conversational confirmation in the chat (e.g., "All set! Your swap was successful...").

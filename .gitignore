@@ -4,6 +4,7 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+.gemini/
 
 # Env & secrets (keep examples)
 .env
