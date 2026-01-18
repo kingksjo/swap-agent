@@ -2,10 +2,8 @@ import { getMockResponse, MOCK_CONFIRMATION_RESPONSE } from '../data/mockRespons
 
 export type AgentMessage =
   | { type: 'assistant_text'; text: string }
-  | { type: 'swap_quote'; data: any }
-  | { type: 'confirmation_request'; action_id: string }
-  | { type: 'swap_result'; data: any }
-  | { type: 'error'; code: string; message: string };
+  | { type: 'confirmation_request'; data: any }
+  | { type: 'error'; message: string };
 
 // Check if mock mode is enabled via environment variable
 const isMockMode = import.meta.env.VITE_USE_MOCK_DATA === 'true';
@@ -96,5 +94,3 @@ export async function confirmAction(
 export function isUsingMockData(): boolean {
   return isMockMode;
 }
-
-
