@@ -18,7 +18,7 @@ export async function sendToAgent(
   input: string,
   sessionId: string,
   ctx?: any
-): Promise<{ messages: AgentMessage[]; session_id?: string }> {
+): Promise<{ messages: AgentMessage[]; session_id?: string; proposed_transaction?: any }> {
   // Use mock data if enabled
   if (isMockMode) {
     console.log('🎭 Mock Mode: Using mock response for:', input);
@@ -36,10 +36,21 @@ export async function sendToAgent(
   const agentKey = import.meta.env.VITE_AGENT_KEY as string | undefined;
   if (agentKey) headers['x-agent-key'] = agentKey;
 
+  // Backend expects: { message, conversation_id, user_address }
+  const requestBody: any = {
+    message: input,
+    conversation_id: sessionId,  // Changed from session_id to conversation_id
+  };
+  
+  // Add user_address if available in context
+  if (ctx?.recipient) {
+    requestBody.user_address = ctx.recipient;
+  }
+
   const res = await fetch(url, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ message: input, session_id: sessionId, context: ctx }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!res.ok) {
@@ -47,9 +58,19 @@ export async function sendToAgent(
     throw new Error(`Agent error: ${res.status} ${text}`);
   }
 
+  // Backend returns: { message, proposed_transaction, conversation_id }
   const json = await res.json();
-  const messages: AgentMessage[] = json.messages || [{ type: 'assistant_text', text: json.response ?? '' }];
-  return { messages, session_id: json.session_id };
+  
+  // Convert backend response to frontend format
+  const messages: AgentMessage[] = [
+    { type: 'assistant_text', text: json.message || '' }
+  ];
+  
+  return { 
+    messages, 
+    session_id: json.conversation_id,  // Map conversation_id back to session_id
+    proposed_transaction: json.proposed_transaction  // Pass through transaction proposal
+  };
 }
 
 export async function confirmAction(
