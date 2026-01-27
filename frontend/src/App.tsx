@@ -55,13 +55,40 @@ function App() {
         walletAddress: address,
         defaults: { slippage_bps: Math.round((preferences.defaultSlippage || 0.5) * 100) }
       };
-      
-      // Get structured response from agent
-      const response = await sendToAgent(content, sessionId, ctx);
-      
-      // Update session ID if provided
-      if (response.conversation_id) {
-        sessionIdRef.current = response.conversation_id;
+      const { messages: agentMsgs, proposed_transaction } = await sendToAgent(content, sessionId, ctx);
+
+      // Log if we received a transaction proposal
+      if (proposed_transaction) {
+        console.log('📝 Received transaction proposal:', proposed_transaction);
+        // TODO: Attach to message metadata for UI rendering
+      }
+
+      for (const msg of agentMsgs) {
+        if (msg.type === 'assistant_text') {
+          addMessage({
+            id: generateMessageId(),
+            type: 'assistant',
+            content: msg.text,
+            timestamp: new Date()
+          });
+        } else if (msg.type === 'confirmation_request') {
+          const data = msg.data || {};
+          const summaryLines: string[] = [];
+          if (data.summary) summaryLines.push(data.summary);
+          if (data.fee_info) {
+            summaryLines.push('\nGas details:');
+            if (data.fee_info.gas_limit) summaryLines.push(`- Gas limit: ${data.fee_info.gas_limit}`);
+            if (data.fee_info.max_fee_per_gas) summaryLines.push(`- Max fee per gas: ${data.fee_info.max_fee_per_gas}`);
+            if (data.fee_info.max_priority_fee_per_gas) summaryLines.push(`- Priority fee: ${data.fee_info.max_priority_fee_per_gas}`);
+            if (data.fee_info.gas_price) summaryLines.push(`- Legacy gas price: ${data.fee_info.gas_price}`);
+          }
+          addMessage({
+            id: generateMessageId(),
+            type: 'assistant',
+            content: summaryLines.join('\n'),
+            timestamp: new Date()
+          });
+        }
       }
 
       // Add assistant message with proposal if present
