@@ -1,9 +1,18 @@
 import { getMockResponse, MOCK_CONFIRMATION_RESPONSE } from '../data/mockResponses';
+import type { TransactionProposal } from '../types';
 
 export type AgentMessage =
   | { type: 'assistant_text'; text: string }
   | { type: 'confirmation_request'; data: any }
   | { type: 'error'; message: string };
+
+// Backend response structure matching FastAPI ChatResponse
+export interface ChatResponse {
+  message: string;
+  proposed_transaction?: TransactionProposal;
+  quote_data?: any;
+  conversation_id: string;
+}
 
 // Check if mock mode is enabled via environment variable
 const isMockMode = import.meta.env.VITE_USE_MOCK_DATA === 'true';
@@ -18,13 +27,18 @@ export async function sendToAgent(
   input: string,
   sessionId: string,
   ctx?: any
-): Promise<{ messages: AgentMessage[]; session_id?: string }> {
+): Promise<ChatResponse> {
   // Use mock data if enabled
   if (isMockMode) {
     console.log('🎭 Mock Mode: Using mock response for:', input);
     await simulateDelay(1000); // Simulate network delay
     const messages = getMockResponse(input);
-    return { messages, session_id: sessionId };
+    // Convert old format to new format for backwards compatibility
+    const textMessage = messages.find(m => m.type === 'assistant_text');
+    return { 
+      message: textMessage?.text || '', 
+      conversation_id: sessionId 
+    };
   }
 
   // Real backend call
@@ -39,7 +53,7 @@ export async function sendToAgent(
   const res = await fetch(url, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ message: input, session_id: sessionId, context: ctx }),
+    body: JSON.stringify({ message: input, conversation_id: sessionId, user_address: ctx?.walletAddress }),
   });
 
   if (!res.ok) {
@@ -48,8 +62,14 @@ export async function sendToAgent(
   }
 
   const json = await res.json();
-  const messages: AgentMessage[] = json.messages || [{ type: 'assistant_text', text: json.response ?? '' }];
-  return { messages, session_id: json.session_id };
+  
+  // Return the structured ChatResponse
+  return {
+    message: json.message,
+    proposed_transaction: json.proposed_transaction,
+    quote_data: json.quote_data,
+    conversation_id: json.conversation_id || sessionId,
+  };
 }
 
 export async function confirmAction(

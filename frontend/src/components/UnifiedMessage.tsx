@@ -3,6 +3,7 @@ import { AlertTriangle, Copy, Upload, MoreHorizontal } from 'lucide-react';
 import { ChatMessage as ChatMessageType } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { SwapCard } from './SwapCard';
 
 interface Props {
   message: ChatMessageType;
@@ -89,6 +90,13 @@ export const UnifiedMessage: React.FC<Props> = ({ message }) => {
           </div>
           <div className={`flex-1 max-w-[85%] ${isSystem ? 'text-red-400' : ''}`}>
             {renderContent()}
+            
+            {/* Render Transaction Proposal Card if present */}
+            {message.metadata?.proposal && (
+              <div className="mt-4">
+                <SwapCard proposal={message.metadata.proposal} />
+              </div>
+            )}
             
             {/* Action Icons - Only show for assistant messages */}
             {isAssistant && (

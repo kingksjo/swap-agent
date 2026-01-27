@@ -11,6 +11,31 @@ export interface Token {
   liquidityUSD?: number;
 }
 
+// Transaction Proposal Types (matching backend models)
+export interface SwapProposal {
+  action: 'swap';
+  tokenIn: string;
+  tokenInAddress: string;
+  tokenOut: string;
+  tokenOutAddress: string;
+  amount: string;
+  estimatedOutput: string;
+  maxSlippage: string;
+  chain: string;
+  routerAddress: string;
+}
+
+export interface SendProposal {
+  action: 'send';
+  token: string;
+  tokenAddress: string;
+  toAddress: string;
+  amount: string;
+  chain: string;
+}
+
+export type TransactionProposal = SwapProposal | SendProposal;
+
 export interface SwapQuote {
   fromToken: Token;
   toToken: Token;
@@ -35,6 +60,7 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   metadata?: {
+    proposal?: TransactionProposal;
     quote?: SwapQuote;
     transaction?: {
       hash: string;
