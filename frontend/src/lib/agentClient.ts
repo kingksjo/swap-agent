@@ -52,17 +52,28 @@ export async function sendToAgent(
   const agentKey = import.meta.env.VITE_AGENT_KEY as string | undefined;
   if (agentKey) headers['x-agent-key'] = agentKey;
 
+  // Backend expects: { message, conversation_id, user_address }
+  const requestBody: any = {
+    message: input,
+    conversation_id: sessionId,  // Changed from session_id to conversation_id
+  };
+  
+  // Add user_address if available in context
+  if (ctx?.recipient) {
+    requestBody.user_address = ctx.recipient;
+  }
+
   const res = await fetch(url, {
     method: 'POST',
     headers,
     body: JSON.stringify({ message: input, conversation_id: sessionId, context: ctx }),
-  });
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`Agent error: ${res.status} ${text}`);
   }
 
+  // Backend returns: { message, proposed_transaction, conversation_id }
   const json = await res.json();
   
   // Parse FastAPI response matching ChatResponse schema

@@ -57,7 +57,13 @@ function App() {
         recipient: address,
         defaults: { slippage_bps: Math.round((preferences.defaultSlippage || 0.5) * 100) }
       };
-      const { messages: agentMsgs } = await sendToAgent(content, sessionId, ctx);
+      const { messages: agentMsgs, proposed_transaction } = await sendToAgent(content, sessionId, ctx);
+
+      // Log if we received a transaction proposal
+      if (proposed_transaction) {
+        console.log('📝 Received transaction proposal:', proposed_transaction);
+        // TODO: Attach to message metadata for UI rendering
+      }
 
       for (const msg of agentMsgs) {
         if (msg.type === 'assistant_text') {
