@@ -57,41 +57,26 @@ function App() {
         recipient: address,
         defaults: { slippage_bps: Math.round((preferences.defaultSlippage || 0.5) * 100) }
       };
-      const { messages: agentMsgs, proposed_transaction } = await sendToAgent(content, sessionId, ctx);
+      
+      // New API structure: { message, proposed_transaction, conversation_id }
+      const response = await sendToAgent(content, sessionId, ctx);
+      
+      // Update session ID with the one from the backend
+      sessionIdRef.current = response.conversation_id;
 
-      // Log if we received a transaction proposal
-      if (proposed_transaction) {
-        console.log('📝 Received transaction proposal:', proposed_transaction);
-        // TODO: Attach to message metadata for UI rendering
-      }
+      // Create assistant message with the response text
+      const assistantMessage: ChatMessageType = {
+        id: generateMessageId(),
+        type: 'assistant',
+        content: response.message,
+        timestamp: new Date(),
+        metadata: response.proposed_transaction ? {
+          proposal: response.proposed_transaction
+        } : undefined
+      };
+      
+      addMessage(assistantMessage);
 
-      for (const msg of agentMsgs) {
-        if (msg.type === 'assistant_text') {
-          addMessage({
-            id: generateMessageId(),
-            type: 'assistant',
-            content: msg.text,
-            timestamp: new Date()
-          });
-        } else if (msg.type === 'confirmation_request') {
-          const data = msg.data || {};
-          const summaryLines: string[] = [];
-          if (data.summary) summaryLines.push(data.summary);
-          if (data.fee_info) {
-            summaryLines.push('\nGas details:');
-            if (data.fee_info.gas_limit) summaryLines.push(`- Gas limit: ${data.fee_info.gas_limit}`);
-            if (data.fee_info.max_fee_per_gas) summaryLines.push(`- Max fee per gas: ${data.fee_info.max_fee_per_gas}`);
-            if (data.fee_info.max_priority_fee_per_gas) summaryLines.push(`- Priority fee: ${data.fee_info.max_priority_fee_per_gas}`);
-            if (data.fee_info.gas_price) summaryLines.push(`- Legacy gas price: ${data.fee_info.gas_price}`);
-          }
-          addMessage({
-            id: generateMessageId(),
-            type: 'assistant',
-            content: summaryLines.join('\n'),
-            timestamp: new Date()
-          });
-        }
-      }
     } catch (error) {
       console.error('Error contacting agent:', error);
       addMessage({

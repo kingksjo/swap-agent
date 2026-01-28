@@ -29,6 +29,31 @@ export interface SwapRoute {
   gasEstimate: string;
 }
 
+// Transaction Proposal Types (matching Python backend models)
+export interface SwapProposal {
+  action: 'swap';
+  tokenIn: string;
+  tokenInAddress: string;
+  tokenOut: string;
+  tokenOutAddress: string;
+  amount: string;
+  estimatedOutput: string;
+  maxSlippage: string;
+  chain: string;
+  routerAddress: string;
+}
+
+export interface SendProposal {
+  action: 'send';
+  token: string;
+  tokenAddress: string;
+  toAddress: string;
+  amount: string;
+  chain: string;
+}
+
+export type TransactionProposal = SwapProposal | SendProposal;
+
 export interface ChatMessage {
   id: string;
   type: 'user' | 'assistant' | 'system';
@@ -36,6 +61,7 @@ export interface ChatMessage {
   timestamp: Date;
   metadata?: {
     quote?: SwapQuote;
+    proposal?: TransactionProposal;
     transaction?: {
       hash: string;
       status: 'pending' | 'success' | 'failed';
