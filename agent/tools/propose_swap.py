@@ -1,7 +1,7 @@
 from langchain_core.tools import tool
 from app.tokens import get_token_address
 from app.price_client import price_client
-from app.config import UNISWAP_ROUTER_ADDRESS
+from app.config import UNISWAP_ROUTER_ADDRESS, BASE_CHAIN_ID
 from decimal import Decimal, InvalidOperation
 
 @tool
@@ -54,7 +54,7 @@ def propose_swap_tool(from_token: str, to_token: str, amount: str, slippage: str
         "amount": str(amount_d), # Return normalized string
         "estimatedOutput": f"{quote['estimated_output']:.6f}",
         "maxSlippage": str(slippage_d),
-        "chain": "base",
+        "chain": BASE_CHAIN_ID,
         "routerAddress": UNISWAP_ROUTER_ADDRESS, 
         "note": "Quote from CoinGecko market data."
     }

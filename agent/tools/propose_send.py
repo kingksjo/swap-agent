@@ -1,5 +1,6 @@
 from langchain_core.tools import tool
 from app.tokens import get_token_address
+from app.config import BASE_CHAIN_ID
 from decimal import Decimal, InvalidOperation
 import re
 
@@ -35,5 +36,5 @@ def propose_send_tool(token: str, recipient_address: str, amount: str):
         "token": token,
         "tokenAddress": token_address,
         "amount": str(amount_d),
-        "chain": "base"
+        "chain": BASE_CHAIN_ID
     }

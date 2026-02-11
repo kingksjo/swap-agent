@@ -1,5 +1,25 @@
-# Base network token registry
+# Base Sepolia testnet token registry
+# Switch to BASE_TOKENS_MAINNET when deploying to production
 BASE_TOKENS = {
+    "ETH": {
+        "address": "0x0000000000000000000000000000000000000000",
+        "decimals": 18,
+        "name": "Ethereum"
+    },
+    "USDC": {
+        "address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6,
+        "name": "USD Coin"
+    },
+    "WETH": {
+        "address": "0x4200000000000000000000000000000000000006",
+        "decimals": 18,
+        "name": "Wrapped Ether"
+    },
+}
+
+# Base mainnet token registry (for production)
+BASE_TOKENS_MAINNET = {
     "ETH": {
         "address": "0x0000000000000000000000000000000000000000",
         "decimals": 18,
