@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Copy, Upload, MoreHorizontal } from 'lucide-react';
-import { ChatMessage as ChatMessageType } from '../types';
+import { ChatMessage as ChatMessageType, TransactionProposal } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { SwapCard } from './SwapCard';
 
 interface Props {
   message: ChatMessageType;
+  onExecuteSwap?: (proposal: TransactionProposal) => void;
 }
 
-export const UnifiedMessage: React.FC<Props> = ({ message }) => {
+export const UnifiedMessage: React.FC<Props> = ({ message, onExecuteSwap }) => {
   const isUser = message.type === 'user';
   const isSystem = message.type === 'system';
   const isAssistant = message.type === 'assistant';
@@ -94,7 +95,10 @@ export const UnifiedMessage: React.FC<Props> = ({ message }) => {
             {/* Render SwapCard if proposal exists */}
             {isAssistant && message.metadata?.proposal && (
               <div className="mt-4">
-                <SwapCard proposal={message.metadata.proposal} />
+                <SwapCard 
+                  proposal={message.metadata.proposal} 
+                  onExecuteSwap={() => onExecuteSwap?.(message.metadata!.proposal!)}
+                />
               </div>
             )}
             

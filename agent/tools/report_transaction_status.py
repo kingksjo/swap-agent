@@ -14,7 +14,8 @@ def report_transaction_status_tool(tx_hash: str, status: str, error: str = None)
     """
 
     if status == 'success':
-        base_explorer = "https://basescan.org/tx/"
+        # base_explorer = "https://basescan.org/tx/"
+        base_explorer = "https://sepolia.basescan.org/tx/"
         return f"Transaction successful! View on Base Explorer: {base_explorer}{tx_hash}"
     else:
         error_guidance = {
