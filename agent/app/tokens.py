@@ -1,6 +1,8 @@
+from app.config import BASE_CHAIN_ID
+
 # Base Sepolia testnet token registry
 # Switch to BASE_TOKENS_MAINNET when deploying to production
-BASE_TOKENS = {
+BASE_TOKENS_SEPOLIA = {
     "ETH": {
         "address": "0x0000000000000000000000000000000000000000",
         "decimals": 18,
@@ -42,9 +44,12 @@ BASE_TOKENS_MAINNET = {
     }
 }
 
+# Select token registry based on configured chain
+TOKENS_REGISTRY = BASE_TOKENS_MAINNET if BASE_CHAIN_ID == "base" else BASE_TOKENS_SEPOLIA
+
 def get_token_address(symbol: str) -> str:
     """Helper to get token address by symbol."""
-    token = BASE_TOKENS.get(symbol.upper())
+    token = TOKENS_REGISTRY.get(symbol.upper())
     if token:
         return token["address"]
     return None

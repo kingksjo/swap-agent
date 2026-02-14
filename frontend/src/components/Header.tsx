@@ -4,7 +4,7 @@ import { useAccount, useBalance, useDisconnect } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 
 export const Header: React.FC = () => {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chain } = useAccount();
   const { data: balance } = useBalance({ address });
   const { disconnect, reset } = useDisconnect();
   const { openConnectModal } = useConnectModal();
@@ -93,7 +93,8 @@ export const Header: React.FC = () => {
 
                     <button
                       onClick={() => {
-                        window.open(`https://etherscan.io/address/${address}`, '_blank');
+                        const explorerUrl = chain?.blockExplorers?.default.url || 'https://basescan.org';
+                        window.open(`${explorerUrl}/address/${address}`, '_blank');
                         setShowWalletMenu(false);
                       }}
                       className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-[#2A2A2A] rounded-lg transition-colors"

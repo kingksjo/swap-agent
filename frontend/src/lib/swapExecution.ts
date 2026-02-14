@@ -1,6 +1,7 @@
 import { type Address, parseEther, parseUnits, encodeFunctionData } from 'viem';
 import { type Config } from 'wagmi';
-import { sendTransaction, waitForTransactionReceipt } from 'wagmi/actions';
+import { sendTransaction, waitForTransactionReceipt, switchChain, getAccount } from 'wagmi/actions';
+// import { base, baseSepolia } from 'wagmi/chains';
 
 // Base network WETH address (required for ETH swaps on Uniswap V3)
 const WETH_ADDRESS = '0x4200000000000000000000000000000000000006' as Address;
@@ -87,6 +88,35 @@ export async function executeSwap(
     const chainId = getChainId(params.chain);
 
     console.log(`🔗 Target chain: ${params.chain} (${chainId})`);
+
+    // Ensure the wallet is on the correct chain before proceeding
+    let account = getAccount(config);
+    console.log(`📱 Current wallet chain ID: ${account.chainId}`);
+
+    if (account.chainId !== chainId) {
+      console.log(`🔄 Switching network to chain ID ${chainId}...`);
+      try {
+        await switchChain(config, { chainId });
+        console.log('✅ Network switch command sent');
+        
+        // Give the wallet provider time to settle and update its internal state
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Re-check the account state to verify the switch was successful
+        account = getAccount(config);
+        console.log(`📱 Updated wallet chain ID: ${account.chainId}`);
+        
+        if (account.chainId !== chainId) {
+          throw new Error(`Wallet failed to switch to the correct network. Current: ${account.chainId}, Expected: ${chainId}`);
+        }
+      } catch (switchError) {
+        console.error('❌ Failed to switch network:', switchError);
+        return { 
+          success: false, 
+          error: switchError instanceof Error ? switchError.message : `Please switch your wallet network to ${params.chain} (Chain ID: ${chainId})` 
+        };
+      }
+    }
 
     // Uniswap V3 requires WETH address, not the zero address
     const tokenIn: Address = isETHInput

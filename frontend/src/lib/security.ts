@@ -36,14 +36,15 @@ export const ALLOWED_CHAINS = ['base', 'base_sepolia'];
  */
 export function isAllowedToken(address: string, chain: string = 'base'): boolean {
   const normalizedAddress = address.toLowerCase();
+  const normalizedChain = chain.toLowerCase();
   
-  if (chain === 'base_sepolia') {
+  if (normalizedChain === 'base_sepolia') {
     return Object.values(ALLOWED_TOKENS_BASE_SEPOLIA)
       .map(addr => addr.toLowerCase())
       .includes(normalizedAddress);
   }
   
-  if (chain === 'base') {
+  if (normalizedChain === 'base') {
     return Object.values(ALLOWED_TOKENS_BASE)
       .map(addr => addr.toLowerCase())
       .includes(normalizedAddress);
@@ -57,14 +58,15 @@ export function isAllowedToken(address: string, chain: string = 'base'): boolean
  */
 export function isAllowedRouter(address: string, chain: string = 'base'): boolean {
   const normalizedAddress = address.toLowerCase();
+  const normalizedChain = chain.toLowerCase();
   
-  if (chain === 'base_sepolia') {
+  if (normalizedChain === 'base_sepolia') {
     return ALLOWED_ROUTERS_BASE_SEPOLIA
       .map(addr => addr.toLowerCase())
       .includes(normalizedAddress);
   }
   
-  if (chain === 'base') {
+  if (normalizedChain === 'base') {
     return ALLOWED_ROUTERS_BASE
       .map(addr => addr.toLowerCase())
       .includes(normalizedAddress);
